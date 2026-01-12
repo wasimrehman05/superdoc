@@ -1,3 +1,10 @@
+# [1.5.0-next.6](https://github.com-Harbour-Enterprises/superdoc-dev/superdoc/compare/v1.5.0-next.5...v1.5.0-next.6) (2026-01-12)
+
+
+### Bug Fixes
+
+* table grid import/export ([#1712](https://github.com-Harbour-Enterprises/superdoc-dev/superdoc/issues/1712)) ([efe09fa](https://github.com-Harbour-Enterprises/superdoc-dev/superdoc/commit/efe09faf426f142b0371e0ff221decd488b7b295))
+
 # [1.5.0-next.6](https://github.com/superdoc-dev/superdoc/compare/v1.5.0-next.5...v1.5.0-next.6) (2026-01-12)
 
 
