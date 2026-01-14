@@ -1,3 +1,10 @@
+## [1.6.2-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.6.2-next.1...v1.6.2-next.2) (2026-01-14)
+
+
+### Bug Fixes
+
+* bug watermarks render darker than they should [SD-1469] ([#1737](https://github.com/superdoc-dev/superdoc/issues/1737)) ([7ce423d](https://github.com/superdoc-dev/superdoc/commit/7ce423d445366c0e400b4143bec3cdd9d8b28e88))
+
 ## [1.6.2-next.1](https://github.com/superdoc-dev/superdoc/compare/v1.6.1...v1.6.2-next.1) (2026-01-14)
 
 
