@@ -201,6 +201,20 @@ const DEFAULT_PAGE_SIZE: PageSize = { w: 612, h: 792 }; // Letter portrait in px
 const DEFAULT_MARGINS: Margins = { top: 72, right: 72, bottom: 72, left: 72 };
 
 const COLUMN_EPSILON = 0.0001;
+
+/**
+ * Safely converts OOXML boolean-like values to actual booleans.
+ * OOXML can encode booleans as true, 1, '1', 'true', or 'on'.
+ */
+const asBoolean = (value: unknown): boolean => {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'on';
+  }
+  return false;
+};
+
 // List constants sourced from shared/common
 
 // Context types moved to modular layouters
@@ -1434,7 +1448,30 @@ export function layoutDocument(blocks: FlowBlock[], measures: Measure[], options
           if (!shouldSkipAnchoredTable) {
             let state = paginator.ensurePage();
             const availableHeight = state.contentBottom - state.cursorY;
+
+            /**
+             * Contextual Spacing for keepNext Page Break Decisions
+             *
+             * Per OOXML spec, contextualSpacing suppresses spacing between adjacent paragraphs
+             * of the same style. This affects page break calculations in two ways:
+             * 1. Spacing before current paragraph may be suppressed (vs previous paragraph)
+             * 2. Spacing between current and next paragraph may be suppressed
+             *
+             * We must account for this when calculating whether the current paragraph
+             * and the start of the next paragraph fit on the current page.
+             */
+            const spacingBefore = getParagraphSpacingBefore(paraBlock);
             const spacingAfter = getParagraphSpacingAfter(paraBlock);
+            /** Trailing spacing from previous paragraph (validated to be finite and positive). */
+            const prevTrailing =
+              Number.isFinite(state.trailingSpacing) && state.trailingSpacing > 0 ? state.trailingSpacing : 0;
+            const currentStyleId = typeof paraBlock.attrs?.styleId === 'string' ? paraBlock.attrs?.styleId : undefined;
+            const currentContextualSpacing = asBoolean(paraBlock.attrs?.contextualSpacing);
+            /** True if contextual spacing applies between previous paragraph and current. */
+            const contextualSpacingApplies =
+              currentContextualSpacing && currentStyleId && state.lastParagraphStyleId === currentStyleId;
+            /** Effective spacing before current, accounting for contextual spacing and trailing collapse. */
+            const effectiveSpacingBefore = contextualSpacingApplies ? 0 : Math.max(spacingBefore - prevTrailing, 0);
             const currentHeight = getMeasureHeight(paraBlock, measure);
             const nextHeight = getMeasureHeight(nextBlock, nextMeasure);
 
@@ -1446,6 +1483,23 @@ export function layoutDocument(blocks: FlowBlock[], measures: Measure[], options
              * Only paragraph blocks have configurable spacing-before values.
              */
             const nextSpacingBefore = nextIsParagraph ? getParagraphSpacingBefore(nextBlock) : 0;
+            const nextStyleId =
+              nextIsParagraph && typeof nextBlock.attrs?.styleId === 'string' ? nextBlock.attrs?.styleId : undefined;
+            const nextContextualSpacing = nextIsParagraph && asBoolean(nextBlock.attrs?.contextualSpacing);
+
+            /**
+             * Inter-paragraph spacing with contextual spacing support.
+             * Per OOXML: contextualSpacing suppresses a paragraph's spacing when adjacent to same-style paragraph.
+             * - current's spacingAfter is suppressed if current has contextualSpacing and next is same style
+             * - next's spacingBefore is suppressed if next has contextualSpacing and current is same style
+             */
+            const sameStyleAsNext = currentStyleId && nextStyleId && nextStyleId === currentStyleId;
+            const effectiveSpacingAfter = currentContextualSpacing && sameStyleAsNext ? 0 : spacingAfter;
+            const effectiveNextSpacingBefore = nextContextualSpacing && sameStyleAsNext ? 0 : nextSpacingBefore;
+            /** Gap between current and next paragraph, with contextual spacing applied. */
+            const interParagraphSpacing = nextIsParagraph
+              ? Math.max(effectiveSpacingAfter, effectiveNextSpacingBefore)
+              : effectiveSpacingAfter;
 
             /**
              * Height of the first line of the next block.
@@ -1466,13 +1520,24 @@ export function layoutDocument(blocks: FlowBlock[], measures: Measure[], options
               return nextHeight;
             })();
 
-            // For keepNext, we only need enough space for the next block to start (heading + first line), not the full next block.
-            // This prevents excessive page breaks while still honoring the keepNext constraint.
+            /**
+             * Combined height needed to keep current paragraph with the start of next.
+             * For keepNext, we only need enough space for the next block to start (heading + first line),
+             * not the full next block. This prevents excessive page breaks while still honoring keepNext.
+             */
             const combinedHeight = nextIsParagraph
-              ? currentHeight + Math.max(spacingAfter, nextSpacingBefore) + nextFirstLineHeight
-              : currentHeight + spacingAfter + nextHeight;
+              ? effectiveSpacingBefore + currentHeight + interParagraphSpacing + nextFirstLineHeight
+              : effectiveSpacingBefore + currentHeight + spacingAfter + nextHeight;
 
-            if (combinedHeight > availableHeight && state.page.fragments.length > 0) {
+            /**
+             * Available height adjusted for contextual spacing.
+             * When contextual spacing applies, the previous paragraph's trailing spacing is reclaimed
+             * since it won't be rendered as a gap.
+             */
+            const effectiveAvailableHeight = contextualSpacingApplies
+              ? availableHeight + prevTrailing
+              : availableHeight;
+            if (combinedHeight > effectiveAvailableHeight && state.page.fragments.length > 0) {
               state = paginator.advanceColumn(state);
             }
           }
