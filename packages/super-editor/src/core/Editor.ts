@@ -2373,7 +2373,7 @@ export class Editor extends EventEmitter<EditorEventMap> {
     commentsType = 'external',
     exportJsonOnly = false,
     exportXmlOnly = false,
-    comments = [],
+    comments,
     getUpdatedDocs = false,
     fieldsHighlightColor = null,
   }: {
@@ -2386,8 +2386,17 @@ export class Editor extends EventEmitter<EditorEventMap> {
     fieldsHighlightColor?: string | null;
   } = {}): Promise<Blob | ArrayBuffer | Buffer | Record<string, string> | ProseMirrorJSON | string | undefined> {
     try {
+      // Use provided comments, or fall back to imported comments from converter
+      const effectiveComments = comments ?? this.converter.comments ?? [];
+
+      // Normalize commentJSON property (imported comments use textJson)
+      const preparedComments = effectiveComments.map((comment: Comment) => ({
+        ...comment,
+        commentJSON: comment.commentJSON ?? (comment as Record<string, unknown>).textJson,
+      }));
+
       // Pre-process the document state to prepare for export
-      const json = this.#prepareDocumentForExport(comments);
+      const json = this.#prepareDocumentForExport(preparedComments);
 
       // Export the document to DOCX
       // GUID will be handled automatically in converter.exportToDocx if document was modified
@@ -2397,7 +2406,7 @@ export class Editor extends EventEmitter<EditorEventMap> {
         (this.storage.image as ImageStorage).media,
         isFinalDoc,
         commentsType,
-        comments,
+        preparedComments,
         this,
         exportJsonOnly,
         fieldsHighlightColor,
@@ -2459,7 +2468,7 @@ export class Editor extends EventEmitter<EditorEventMap> {
         updatedDocs['word/_rels/footnotes.xml.rels'] = String(footnotesRelsXml);
       }
 
-      if (comments.length) {
+      if (preparedComments.length) {
         const commentsXml = this.converter.schemaToXml(this.converter.convertedXml['word/comments.xml'].elements[0]);
         updatedDocs['word/comments.xml'] = String(commentsXml);
 

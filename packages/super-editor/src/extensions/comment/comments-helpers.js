@@ -219,83 +219,118 @@ export const prepareCommentsForExport = (doc, tr, schema, comments = []) => {
     return comment.parentCommentId;
   };
 
+  // First pass: collect full ranges for each comment mark
+  // Map of commentId -> { start: number, end: number, attrs: object }
+  const commentRanges = new Map();
+  const commentTrackedChangeId = new Map();
+
+  doc.descendants((node, pos) => {
+    const commentMarks = node.marks?.filter((mark) => mark.type.name === CommentMarkName) || [];
+    if (!commentMarks.length) return;
+
+    const nodeEnd = pos + node.nodeSize;
+    const trackedChangeMark = node.marks?.find((mark) => TRACK_CHANGE_MARKS.includes(mark.type.name));
+    const trackedChangeId = trackedChangeMark?.attrs?.id;
+
+    commentMarks.forEach((commentMark) => {
+      const { attrs = {} } = commentMark;
+      const { commentId } = attrs;
+
+      if (commentId === 'pending') return;
+
+      if (!commentRanges.has(commentId)) {
+        // First occurrence - record start and end
+        commentRanges.set(commentId, {
+          start: pos,
+          end: nodeEnd,
+          attrs,
+        });
+      } else {
+        // Extend the range to include this node
+        const existing = commentRanges.get(commentId);
+        existing.start = Math.min(existing.start, pos);
+        existing.end = Math.max(existing.end, nodeEnd);
+      }
+
+      if (trackedChangeId && !commentTrackedChangeId.has(commentId)) {
+        commentTrackedChangeId.set(commentId, trackedChangeId);
+      }
+    });
+  });
+
   // Note: Parent/child relationships are tracked via comment.parentCommentId property
   const startNodes = [];
   const endNodes = [];
   const seen = new Set();
   const trackedChangeCommentMeta = new Map();
 
-  doc.descendants((node, pos) => {
-    const commentMarks = node.marks?.filter((mark) => mark.type.name === CommentMarkName) || [];
-    commentMarks.forEach((commentMark) => {
-      const { attrs = {} } = commentMark;
-      const { commentId } = attrs;
+  // Second pass: create start/end nodes using the full ranges
+  commentRanges.forEach(({ start, end, attrs }, commentId) => {
+    if (seen.has(commentId)) return;
+    seen.add(commentId);
 
-      if (commentId === 'pending') return;
-      if (seen.has(commentId)) return;
+    const comment = commentMap.get(commentId);
+    const parentCommentId = getThreadingParentId(comment);
+    const trackedChangeId = commentTrackedChangeId.get(commentId);
+    const trackedSpan = trackedChangeId ? trackedChangeSpanById.get(trackedChangeId) : null;
+    if (trackedSpan) {
+      trackedChangeCommentMeta.set(commentId, {
+        comment,
+        parentCommentId,
+        trackedChangeId,
+      });
+      return;
+    }
 
-      const comment = commentMap.get(commentId);
-      const parentCommentId = getThreadingParentId(comment);
-      const trackedChangeMark = node.marks?.find((mark) => TRACK_CHANGE_MARKS.includes(mark.type.name));
-      const trackedChangeId = trackedChangeMark?.attrs?.id;
-      const trackedSpan = trackedChangeId ? trackedChangeSpanById.get(trackedChangeId) : null;
-      if (trackedSpan) {
-        trackedChangeCommentMeta.set(commentId, {
-          comment,
-          parentCommentId,
-          trackedChangeId,
-        });
-        seen.add(commentId);
-        return;
-      }
+    const commentStartNodeAttrs = getPreparedComment(attrs);
+    const startNode = schema.nodes.commentRangeStart.create(commentStartNodeAttrs);
+    startNodes.push({
+      pos: start,
+      node: startNode,
+      commentId,
+      parentCommentId,
+    });
 
-      seen.add(commentId);
+    const endNode = schema.nodes.commentRangeEnd.create(commentStartNodeAttrs);
+    endNodes.push({
+      pos: end,
+      node: endNode,
+      commentId,
+      parentCommentId,
+    });
 
-      const commentStartNodeAttrs = getPreparedComment(commentMark.attrs);
-      const startNode = schema.nodes.commentRangeStart.create(commentStartNodeAttrs);
+    // Find child comments that should be nested inside this comment
+    const childComments = comments
+      .filter((c) => getThreadingParentId(c) === commentId)
+      .sort((a, b) => a.createdTime - b.createdTime);
+
+    childComments.forEach((c) => {
+      if (seen.has(c.commentId)) return;
+      seen.add(c.commentId);
+
+      // Check if child has its own range in the document
+      const childRange = commentRanges.get(c.commentId);
+      const childStart = childRange?.start ?? start;
+      const childEnd = childRange?.end ?? end;
+
+      const childMark = getPreparedComment({
+        commentId: c.commentId,
+        internal: c.isInternal,
+      });
+      const childStartNode = schema.nodes.commentRangeStart.create(childMark);
       startNodes.push({
-        pos,
-        node: startNode,
-        commentId,
-        parentCommentId,
+        pos: childStart,
+        node: childStartNode,
+        commentId: c.commentId,
+        parentCommentId: getThreadingParentId(c),
       });
 
-      const endNode = schema.nodes.commentRangeEnd.create(commentStartNodeAttrs);
+      const childEndNode = schema.nodes.commentRangeEnd.create(childMark);
       endNodes.push({
-        pos: pos + node.nodeSize,
-        node: endNode,
-        commentId,
-        parentCommentId,
-      });
-
-      // Find child comments that should be nested inside this comment
-      const childComments = comments
-        .filter((c) => getThreadingParentId(c) === commentId)
-        .sort((a, b) => a.createdTime - b.createdTime);
-
-      childComments.forEach((c) => {
-        if (seen.has(c.commentId)) return;
-        seen.add(c.commentId);
-
-        const childMark = getPreparedComment({
-          commentId: c.commentId,
-          internal: c.isInternal,
-        });
-        const childStartNode = schema.nodes.commentRangeStart.create(childMark);
-        startNodes.push({
-          pos,
-          node: childStartNode,
-          commentId: c.commentId,
-          parentCommentId: getThreadingParentId(c),
-        });
-
-        const childEndNode = schema.nodes.commentRangeEnd.create(childMark);
-        endNodes.push({
-          pos: pos + node.nodeSize,
-          node: childEndNode,
-          commentId: c.commentId,
-          parentCommentId: getThreadingParentId(c),
-        });
+        pos: childEnd,
+        node: childEndNode,
+        commentId: c.commentId,
+        parentCommentId: getThreadingParentId(c),
       });
     });
   });
@@ -338,6 +373,42 @@ export const prepareCommentsForExport = (doc, tr, schema, comments = []) => {
         node: childEndNode,
         commentId: comment.commentId,
         parentCommentId,
+      });
+
+      const childComments = comments
+        .filter((c) => getThreadingParentId(c) === comment.commentId)
+        .sort((a, b) => a.createdTime - b.createdTime);
+
+      childComments.forEach((c) => {
+        if (seen.has(c.commentId)) return;
+        seen.add(c.commentId);
+
+        const childRange = commentRanges.get(c.commentId);
+        const childStart = childRange?.start ?? span.startPos;
+        const childEnd = childRange?.end ?? span.endPos;
+        const childStartMarks = childRange ? undefined : startMarks;
+        const childEndMarks = childRange ? undefined : endMarks;
+
+        const childMarkAttrs = getPreparedComment({
+          commentId: c.commentId,
+          internal: c.isInternal,
+        });
+
+        const childStartNode = schema.nodes.commentRangeStart.create(childMarkAttrs, null, childStartMarks);
+        startNodes.push({
+          pos: childStart,
+          node: childStartNode,
+          commentId: c.commentId,
+          parentCommentId: getThreadingParentId(c),
+        });
+
+        const childEndNode = schema.nodes.commentRangeEnd.create(childMarkAttrs, null, childEndMarks);
+        endNodes.push({
+          pos: childEnd,
+          node: childEndNode,
+          commentId: c.commentId,
+          parentCommentId: getThreadingParentId(c),
+        });
       });
     });
 
