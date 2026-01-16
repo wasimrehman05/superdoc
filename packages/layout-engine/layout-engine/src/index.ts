@@ -401,7 +401,12 @@ function calculateChainHeight(
       } else {
         // Non-paragraph anchor (table, image, etc.): use full height
         // No contextual spacing applies to non-paragraph blocks
-        totalHeight += prevSpacingAfter + getMeasureHeight(anchorBlock, anchorMeasure);
+        // Skip anchored tables - they're positioned out of flow and don't consume flow height
+        // (consistent with shouldSkipAnchoredTable guard in legacy keepNext path)
+        const isAnchoredTable = anchorBlock.kind === 'table' && (anchorBlock as TableBlock).anchor?.isAnchored === true;
+        if (!isAnchoredTable) {
+          totalHeight += prevSpacingAfter + getMeasureHeight(anchorBlock, anchorMeasure);
+        }
       }
     }
   }
