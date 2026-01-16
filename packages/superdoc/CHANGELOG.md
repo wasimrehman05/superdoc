@@ -1,3 +1,10 @@
+# [1.8.0-next.3](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.2...v1.8.0-next.3) (2026-01-16)
+
+
+### Features
+
+* include non-breaking spaces in search ([#1768](https://github.com/superdoc-dev/superdoc/issues/1768)) ([d2784b9](https://github.com/superdoc-dev/superdoc/commit/d2784b941336037a63df8aa554318df22b653498))
+
 # [1.8.0-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.1...v1.8.0-next.2) (2026-01-16)
 
 
