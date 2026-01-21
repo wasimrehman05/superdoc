@@ -1,3 +1,10 @@
+# [1.8.0-next.10](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.9...v1.8.0-next.10) (2026-01-21)
+
+
+### Bug Fixes
+
+* reorganize style resolution in the layout engine (SD-1411) ([#1786](https://github.com/superdoc-dev/superdoc/issues/1786)) ([1845b76](https://github.com/superdoc-dev/superdoc/commit/1845b76a2c1f8a00aa3aa2b1ca855dd7185d7aaa))
+
 # [1.8.0-next.9](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.8...v1.8.0-next.9) (2026-01-21)
 
 
