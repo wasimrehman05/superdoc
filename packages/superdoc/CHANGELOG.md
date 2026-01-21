@@ -1,3 +1,17 @@
+# [1.8.0-next.7](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.6...v1.8.0-next.7) (2026-01-21)
+
+
+### Bug Fixes
+
+* **search:** preserve leading/trailing whitespace in flexible matches ([#1788](https://github.com/superdoc-dev/superdoc/issues/1788)) ([c5d6751](https://github.com/superdoc-dev/superdoc/commit/c5d6751b6c37a7e01f86d97aec5a9e854c4d0cc9))
+
+
+### Features
+
+* comment anchor helpers ([#1796](https://github.com/superdoc-dev/superdoc/issues/1796)) ([595bdc6](https://github.com/superdoc-dev/superdoc/commit/595bdc68660a508dede2d1f58c8a29f609db7cac))
+* comment highlight config ([#1798](https://github.com/superdoc-dev/superdoc/issues/1798)) ([aa7e957](https://github.com/superdoc-dev/superdoc/commit/aa7e957dabbe8a6bec9f5e30801a3bafb8369b11))
+* **comments:** add position-ordered comments getter ([#1774](https://github.com/superdoc-dev/superdoc/issues/1774)) ([bdac914](https://github.com/superdoc-dev/superdoc/commit/bdac914cdb1a0d399b70ef46c13a7e6155372f01))
+
 # [1.8.0-next.6](https://github.com/superdoc-dev/superdoc/compare/v1.8.0-next.5...v1.8.0-next.6) (2026-01-20)
 
 
