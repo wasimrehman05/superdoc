@@ -1,3 +1,10 @@
+## [1.8.2-next.1](https://github.com/superdoc-dev/superdoc/compare/v1.8.1...v1.8.2-next.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* simplify paragraph and table converters in pm-adapter (SD-1587) ([#1806](https://github.com/superdoc-dev/superdoc/issues/1806)) ([fa009bb](https://github.com/superdoc-dev/superdoc/commit/fa009bbab0deab9853bc9fa70c0f5ce16a3ce0e1))
+
 ## [1.8.1](https://github.com/superdoc-dev/superdoc/compare/v1.8.0...v1.8.1) (2026-01-22)
 
 
