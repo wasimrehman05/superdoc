@@ -1,3 +1,12 @@
+## [1.8.1](https://github.com/superdoc-dev/superdoc/compare/v1.8.0...v1.8.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* **importer:** wrap root-level inline nodes in paragraphs and disallow marks on passthroughInline ([#1804](https://github.com/superdoc-dev/superdoc/issues/1804)) ([7d0a752](https://github.com/superdoc-dev/superdoc/commit/7d0a7528493c2c7cea96ac72632db1f14f1f7fbc))
+* include doc default fonts and stabilize linked-style run properties ([b2d9fc9](https://github.com/superdoc-dev/superdoc/commit/b2d9fc977198ee3c131659ec312e0fdb4309af2e))
+* list indicators are not visible when list item is empty ([#1807](https://github.com/superdoc-dev/superdoc/issues/1807)) ([9197e85](https://github.com/superdoc-dev/superdoc/commit/9197e8558331d11b0c052a28f2fb8ff045e3c40f))
+
 ## [1.8.1-next.3](https://github.com/superdoc-dev/superdoc/compare/v1.8.1-next.2...v1.8.1-next.3) (2026-01-22)
 
 
