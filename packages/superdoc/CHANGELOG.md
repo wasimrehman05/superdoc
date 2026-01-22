@@ -1,3 +1,10 @@
+## [1.8.1-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.8.1-next.1...v1.8.1-next.2) (2026-01-22)
+
+
+### Bug Fixes
+
+* list indicators are not visible when list item is empty ([#1807](https://github.com/superdoc-dev/superdoc/issues/1807)) ([9197e85](https://github.com/superdoc-dev/superdoc/commit/9197e8558331d11b0c052a28f2fb8ff045e3c40f))
+
 ## [1.8.1-next.1](https://github.com/superdoc-dev/superdoc/compare/v1.8.0...v1.8.1-next.1) (2026-01-22)
 
 
