@@ -1,3 +1,10 @@
+# [1.9.0-next.3](https://github.com/superdoc-dev/superdoc/compare/v1.9.0-next.2...v1.9.0-next.3) (2026-01-24)
+
+
+### Bug Fixes
+
+* annotation formatting ([0ac67b2](https://github.com/superdoc-dev/superdoc/commit/0ac67b20e6dca1aebe077eaf5e7e116ad61b2135))
+
 # [1.9.0-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.9.0-next.1...v1.9.0-next.2) (2026-01-24)
 
 
