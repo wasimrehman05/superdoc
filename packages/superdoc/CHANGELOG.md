@@ -1,3 +1,10 @@
+# [1.9.0-next.9](https://github.com/superdoc-dev/superdoc/compare/v1.9.0-next.8...v1.9.0-next.9) (2026-01-28)
+
+
+### Bug Fixes
+
+* patch broken numbering definitions ([#1848](https://github.com/superdoc-dev/superdoc/issues/1848)) ([f34b121](https://github.com/superdoc-dev/superdoc/commit/f34b1217eb7afc01f49da8db54d63e6e3126185a))
+
 # [1.9.0-next.8](https://github.com/superdoc-dev/superdoc/compare/v1.9.0-next.7...v1.9.0-next.8) (2026-01-28)
 
 
