@@ -1,3 +1,10 @@
+## [1.10.1-next.4](https://github.com/superdoc-dev/superdoc/compare/v1.10.1-next.3...v1.10.1-next.4) (2026-01-30)
+
+
+### Bug Fixes
+
+* make Ctrl-a select all content, and fix select all when there are tables in doc ([#1886](https://github.com/superdoc-dev/superdoc/issues/1886)) ([c87c1ab](https://github.com/superdoc-dev/superdoc/commit/c87c1ab1d122482a6c65d77decb6374e97f9d45e))
+
 ## [1.10.1-next.3](https://github.com/superdoc-dev/superdoc/compare/v1.10.1-next.2...v1.10.1-next.3) (2026-01-30)
 
 
