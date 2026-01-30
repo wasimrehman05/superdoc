@@ -1,3 +1,10 @@
+# [1.10.0-next.5](https://github.com/superdoc-dev/superdoc/compare/v1.10.0-next.4...v1.10.0-next.5) (2026-01-30)
+
+
+### Bug Fixes
+
+* comment text after enter break is dropped on render and export ([#1853](https://github.com/superdoc-dev/superdoc/issues/1853)) ([ce7f553](https://github.com/superdoc-dev/superdoc/commit/ce7f5534afaa8e46cb4d4e41fb6478575dea26e3))
+
 # [1.10.0-next.4](https://github.com/superdoc-dev/superdoc/compare/v1.10.0-next.3...v1.10.0-next.4) (2026-01-29)
 
 
