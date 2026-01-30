@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: '/',
+  base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     dedupe: ['react', 'react-dom'],
     ...(mode === 'development' && {

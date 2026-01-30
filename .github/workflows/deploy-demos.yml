@@ -8,47 +8,63 @@ on:
       - 'packages/esign/**'
   workflow_dispatch:
 
-jobs:
-  deploy-template-builder-demo:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install
-      - name: Build template-builder
-        run: pnpm --filter @superdoc-dev/template-builder build
-      - name: Build demo
-        run: pnpm --filter superdoc-template-builder-demo build
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./packages/template-builder/demo/dist
-          cname: template-builder.superdoc.dev
+permissions:
+  contents: write
+  pages: write
 
-  deploy-esign-demo:
+jobs:
+  deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+
       - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
+
       - run: pnpm install
+
       - name: Build superdoc (dependency)
         run: pnpm run build:superdoc
+
+      - name: Build template-builder
+        run: pnpm --filter @superdoc-dev/template-builder build
+
       - name: Build esign
         run: pnpm --filter @superdoc-dev/esign build
-      - name: Build demo
+
+      - name: Build template-builder demo
+        run: pnpm --filter superdoc-template-builder-demo build
+        env:
+          VITE_BASE_PATH: /template-builder/
+
+      - name: Build esign demo
         run: pnpm --filter superdoc-esign-demo build
+        env:
+          VITE_BASE_PATH: /esign/
+
+      - name: Prepare combined publish directory
+        run: |
+          mkdir -p ./demos-dist
+          cp -r ./packages/template-builder/demo/dist ./demos-dist/template-builder
+          cp -r ./packages/esign/demo/dist ./demos-dist/esign
+          echo '<html><head><meta http-equiv="refresh" content="0; url=/template-builder/"></head></html>' > ./demos-dist/index.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./packages/esign/demo/dist
-          cname: esign.superdoc.dev
+          personal_token: ${{ steps.generate_token.outputs.token }}
+          publish_dir: ./demos-dist
+          cname: demos.superdoc.dev
