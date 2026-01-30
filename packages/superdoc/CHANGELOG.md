@@ -1,3 +1,11 @@
+## [1.10.1-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.10.1-next.1...v1.10.1-next.2) (2026-01-30)
+
+
+### Bug Fixes
+
+* document dropdown resets ([#1883](https://github.com/superdoc-dev/superdoc/issues/1883)) ([b552d2e](https://github.com/superdoc-dev/superdoc/commit/b552d2e272d7f8b19e1bf2400c58fec9fed30f16))
+* selection across pages with drag ([#1884](https://github.com/superdoc-dev/superdoc/issues/1884)) ([bb44999](https://github.com/superdoc-dev/superdoc/commit/bb449995bf0537d9471c88b7c1ddca948ea0b070))
+
 ## [1.10.1-next.1](https://github.com/superdoc-dev/superdoc/compare/v1.10.0...v1.10.1-next.1) (2026-01-30)
 
 
