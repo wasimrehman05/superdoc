@@ -1,3 +1,10 @@
+## [1.10.1-next.1](https://github.com/superdoc-dev/superdoc/compare/v1.10.0...v1.10.1-next.1) (2026-01-30)
+
+
+### Bug Fixes
+
+* **super-converter:** return transparent instead of blue for shapes ([#1854](https://github.com/superdoc-dev/superdoc/issues/1854)) ([6ac29d7](https://github.com/superdoc-dev/superdoc/commit/6ac29d79b4cb986dc52f79db16966d413c07111e)), closes [#5b9bd5](https://github.com/superdoc-dev/superdoc/issues/5b9bd5)
+
 # [1.10.0](https://github.com/superdoc-dev/superdoc/compare/v1.9.0...v1.10.0) (2026-01-30)
 
 
