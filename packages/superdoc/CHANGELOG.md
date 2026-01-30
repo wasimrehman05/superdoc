@@ -1,3 +1,10 @@
+## [1.10.1-next.3](https://github.com/superdoc-dev/superdoc/compare/v1.10.1-next.2...v1.10.1-next.3) (2026-01-30)
+
+
+### Bug Fixes
+
+* run color overwrite in applyInlineRunProperties (SD-1585) ([#1885](https://github.com/superdoc-dev/superdoc/issues/1885)) ([6051dd4](https://github.com/superdoc-dev/superdoc/commit/6051dd4de2225217b6cd426cbb2ae657998d72a2))
+
 ## [1.10.1-next.2](https://github.com/superdoc-dev/superdoc/compare/v1.10.1-next.1...v1.10.1-next.2) (2026-01-30)
 
 
