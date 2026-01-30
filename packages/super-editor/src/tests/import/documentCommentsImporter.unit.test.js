@@ -238,6 +238,20 @@ describe('importCommentData metadata parsing', () => {
     expect(comment.trackedChangeType).toBeUndefined();
     expect(comment.trackedDeletedText).toBeNull();
   });
+
+  it('preserves multiple text elements for comments with several paragraphs', () => {
+    const docx = buildDocx({
+      comments: [
+        {
+          id: 8,
+          elements: [{ fakeParaId: 'first-para' }, { fakeParaId: 'second-para' }],
+        },
+      ],
+    });
+
+    const [comment] = importCommentData({ docx });
+    expect(comment.elements).toHaveLength(2);
+  });
 });
 
 describe('importCommentData extended metadata', () => {
