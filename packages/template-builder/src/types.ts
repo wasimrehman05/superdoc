@@ -1,5 +1,6 @@
 import type { SuperDoc } from 'superdoc';
 
+/** Field definition for template builder */
 export interface FieldDefinition {
   id: string;
   label: string;
