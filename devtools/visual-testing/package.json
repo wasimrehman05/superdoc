@@ -22,6 +22,7 @@
     "compare:interactions": "tsx scripts/compare-interactions.ts",
     "upload-corpus": "tsx scripts/upload-corpus.ts",
     "get-corpus": "tsx scripts/get-corpus.ts",
+    "get-docx": "tsx scripts/get-docx.ts",
     "upload": "tsx scripts/upload-corpus-doc.ts",
     "filters": "tsx scripts/list-filters.ts",
     "clear:all": "read -p 'This will delete all baselines, screenshots, and results. Are you sure? (y/N) ' confirm && [ \"$confirm\" = 'y' ] && rm -rf baselines baselines-interactions screenshots results && echo 'Cleared!' || echo 'Aborted.'",

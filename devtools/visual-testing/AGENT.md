@@ -14,6 +14,46 @@ This repo runs **interaction tests** that simulate user actions in SuperDoc (a d
 
 ---
 
+## Agent Rules (Read First)
+
+- Read this file end-to-end and skim existing stories in the relevant category before creating a new story. This reveals available helpers (including `addComment`) and conventions.
+- Prefer helpers from `tests/interactions/helpers` and the built-in story helpers over raw Playwright `page` access.
+- Do not guess selectors. If a selector is not documented here or visible in existing stories/helpers, verify it with the harness + Playwright (see below) or ask for guidance.
+- Keep stories focused on one behavior. Always `waitForStable()` before `milestone()` and include `tickets` when known.
+
+## Selector Verification (No Guessing)
+
+Start the harness (from `devtools/visual-testing`):
+
+```bash
+pnpm --filter @superdoc-testing/harness dev -- --strictPort
+```
+
+Probe selectors with Playwright:
+
+```bash
+cat <<'TS' > /tmp/sd-selector-check.ts
+import { chromium } from '@playwright/test';
+import { goToHarness, waitForSuperdocReady } from '@superdoc-testing/helpers';
+
+const SELECTOR = '<selector-to-validate>';
+
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await goToHarness(page);
+await waitForSuperdocReady(page);
+
+const count = await page.locator(SELECTOR).count();
+console.log(`Selector ${SELECTOR} matched:`, count);
+
+await browser.close();
+TS
+
+pnpm exec tsx /tmp/sd-selector-check.ts
+```
+
+If you cannot validate a selector, ask for guidance instead of guessing.
+
 ## Directory Structure
 
 ```

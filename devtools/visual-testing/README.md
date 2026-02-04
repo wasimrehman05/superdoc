@@ -66,6 +66,7 @@ Examples:
 - `pnpm compare:interactions` compare interaction snapshots only.
 - `pnpm upload --folder <name> <file.docx>` upload a single docx into the corpus and update `registry.json`.
 - `pnpm get-corpus [dest] --filter <name>` download corpus docs into a local folder (default: `./test-docs`).
+- `pnpm get-docx <path>` download a single docx into a temp folder (prints the local path).
 - `pnpm filters` list filterable folders for `--filter`.
 - `pnpm clear:all` remove all baselines, screenshots, and results.
 - `pnpm test` run tests.
