@@ -49,7 +49,7 @@ jobs:
         working-directory: apps/vscode-ext
 
       - name: Release
-        run: pnpx semantic-release
+        run: pnpx semantic-release-monorepo
         working-directory: apps/vscode-ext
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
