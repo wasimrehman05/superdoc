@@ -77,8 +77,8 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "release": "pnpx semantic-release-monorepo",
-    "release:dry-run": "pnpx semantic-release-monorepo --dry-run",
+    "release": "pnpx semantic-release",
+    "release:dry-run": "pnpx semantic-release --dry-run",
     "vscode:prepublish": "pnpm run build"
   },
   "devDependencies": {
