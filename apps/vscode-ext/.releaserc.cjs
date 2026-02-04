@@ -11,19 +11,29 @@ const config = {
     '@semantic-release/commit-analyzer',
     '@semantic-release/release-notes-generator',
     ['@semantic-release/npm', { npmPublish: false }], // Version bump only, no npm publish
-    [
-      '@semantic-release/exec',
-      {
-        prepareCmd: 'pnpm run package', // Creates .vsix file
-        publishCmd: 'pnpm run publish:vsce', // Publishes to VS Code Marketplace
-      },
-    ],
   ],
 };
 
 const isPrerelease = config.branches.some((b) => typeof b === 'object' && b.name === branch && b.prerelease);
 
-if (!isPrerelease) {
+// VS Code Marketplace doesn't support semver prerelease versions (e.g., 0.0.1-next.1)
+// Only publish stable releases to marketplace; prereleases get GitHub release with .vsix attached
+if (isPrerelease) {
+  config.plugins.push([
+    '@semantic-release/exec',
+    {
+      prepareCmd: 'pnpm run package', // Creates .vsix file only
+    },
+  ]);
+} else {
+  config.plugins.push([
+    '@semantic-release/exec',
+    {
+      prepareCmd: 'pnpm run package', // Creates .vsix file
+      publishCmd: 'pnpm run publish:vsce', // Publishes to VS Code Marketplace
+    },
+  ]);
+
   config.plugins.push([
     '@semantic-release/git',
     {
