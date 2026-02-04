@@ -4,10 +4,11 @@ name: 📦 Release vscode-ext
 
 on:
   push:
-    branches: [main, stable]
+    branches: main
     paths:
       - 'apps/vscode-ext/**'
       - '!apps/vscode-ext/*.md'
+  workflow_dispatch:
 
 permissions:
   contents: write
