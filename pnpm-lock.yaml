@@ -243,6 +243,9 @@ catalogs:
     semantic-release:
       specifier: ^24.2.7
       version: 24.2.9
+    semantic-release-commit-filter:
+      specifier: ^1.0.2
+      version: 1.0.2
     semantic-release-linear-app:
       specifier: ^0.5.1
       version: 0.5.1
@@ -364,6 +367,9 @@ importers:
       semantic-release:
         specifier: 'catalog:'
         version: 24.2.9(typescript@5.9.3)
+      semantic-release-commit-filter:
+        specifier: 'catalog:'
+        version: 1.0.2
       semantic-release-linear-app:
         specifier: 'catalog:'
         version: 0.5.1(semantic-release@24.2.9(typescript@5.9.3))
@@ -9080,6 +9086,9 @@ packages:
 
   seemly@0.3.10:
     resolution: {integrity: sha512-2+SMxtG1PcsL0uyhkumlOU6Qo9TAQ/WyH7tthnPIOQB05/12jz9naq6GZ6iZ6ApVsO3rr2gsnTf3++OV63kE1Q==}
+
+  semantic-release-commit-filter@1.0.2:
+    resolution: {integrity: sha512-LpIB1UN78oRmJnqgPdvA/qRgVitih5V1Ybyszv8GcOBAJWJBHGWI1PmSrOfdEmbf1ZvGkdK/NNDdBHbuSQqSyQ==}
 
   semantic-release-linear-app@0.5.1:
     resolution: {integrity: sha512-voNPfzxUGSVsQMnW7scYSwtV/J5SOuWfVCcsQwWIA1O0NSNZd7xAP/sNX1aTdADv37YnhaAQe3ai3U8Mj3f/1w==}
@@ -20416,6 +20425,8 @@ snapshots:
   scheduler@0.27.0: {}
 
   seemly@0.3.10: {}
+
+  semantic-release-commit-filter@1.0.2: {}
 
   semantic-release-linear-app@0.5.1(semantic-release@24.2.9(typescript@5.9.3)):
     dependencies:
