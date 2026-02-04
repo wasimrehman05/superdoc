@@ -11,7 +11,7 @@ import 'superdoc/style.css';
 import BlankDOCX from '../../../../../shared/common/data/blank.docx?url';
 import { onMounted, shallowRef, computed } from 'vue';
 import { SuperDoc } from 'superdoc';
-import { parseConfig, type HarnessConfig } from './config-parser';
+import { parseConfig, logAvailableParams, type HarnessConfig } from './config-parser';
 
 // ============================================================================
 // Type Declarations
@@ -82,6 +82,9 @@ declare global {
 
 /** Parse configuration from URL parameters */
 const config: HarnessConfig = parseConfig(window.location.search);
+
+// Log available parameters on startup
+logAvailableParams(config);
 
 // Expose config for debugging
 window.harnessConfig = config;

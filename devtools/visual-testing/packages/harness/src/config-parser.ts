@@ -244,3 +244,44 @@ export function describeConfig(config: HarnessConfig): string {
 
   return parts.join('_') || 'default';
 }
+
+/**
+ * Log available URL parameters to the console.
+ * Called once at startup to help developers understand the available options.
+ *
+ * @param config - Current parsed configuration to show current values
+ */
+export function logAvailableParams(config: HarnessConfig): void {
+  const currentParams = new URLSearchParams();
+
+  // Build current params string (only non-defaults)
+  if (!config.layout) currentParams.set('layout', '0');
+  if (config.toolbar !== 'none') currentParams.set('toolbar', config.toolbar);
+  if (config.comments !== 'off') currentParams.set('comments', config.comments);
+  if (config.trackChanges) currentParams.set('trackChanges', '1');
+  if (config.viewport.width !== 1600) currentParams.set('width', String(config.viewport.width));
+  if (config.viewport.height !== 1200) currentParams.set('height', String(config.viewport.height));
+  if (config.waitForFonts) currentParams.set('fonts', '1');
+  if (!config.hideCaret) currentParams.set('hideCaret', '0');
+  if (!config.hideSelection) currentParams.set('hideSelection', '0');
+  if (config.caretBlink) currentParams.set('caretBlink', '1');
+  if (config.extensions.length > 0) currentParams.set('extensions', config.extensions.join(','));
+
+  const currentString = currentParams.toString();
+
+  console.log(`[Test Harness] Available URL Parameters:
+  layout        - Layout engine on/off (default: 1, use 0 to disable)
+  toolbar       - Toolbar mode: none | minimal | full (default: none)
+  comments      - Comments mode: off | on | panel | readonly (default: off)
+  trackChanges  - Track changes: 0 | 1 (default: 0)
+  width         - Viewport width in px (default: 1600)
+  height        - Viewport height in px (default: 1200)
+  fonts         - Wait for fonts: 0 | 1 (default: 0)
+  hideCaret     - Hide caret for visual testing: 0 | 1 (default: 1)
+  hideSelection - Hide selection for visual testing: 0 | 1 (default: 1)
+  caretBlink    - Enable caret blink: 0 | 1 (default: 0)
+  extensions    - Custom extensions (comma-separated)
+
+  Example: ?layout=0&comments=panel&toolbar=full
+  Current: ${currentString ? `?${currentString}` : '(defaults)'}`);
+}
