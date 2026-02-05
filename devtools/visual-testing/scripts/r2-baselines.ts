@@ -628,6 +628,7 @@ export async function uploadDirectoryToR2(options: { localDir: string; remotePre
   }
 
   const normalizedPrefix = normalizePath(remotePrefix);
+  const shouldVerify = process.env.SUPERDOC_TEST_CI === '1' || process.env.SUPERDOC_R2_VERIFY_UPLOAD === '1';
   let uploaded = 0;
   const files: string[] = [];
 
@@ -635,6 +636,11 @@ export async function uploadDirectoryToR2(options: { localDir: string; remotePre
 
   if (files.length === 0) {
     return 0;
+  }
+
+  if (shouldVerify) {
+    console.log(`R2 bucket: ${bucketName}`);
+    console.log(`R2 prefix: ${normalizedPrefix || '(root)'}`);
   }
 
   let totalBytes = 0;
@@ -701,5 +707,16 @@ export async function uploadDirectoryToR2(options: { localDir: string; remotePre
     process.stdout.write('\n');
   }
 
+  if (shouldVerify) {
+    const verifyPrefix = normalizedPrefix ? `${normalizedPrefix}/` : '';
+    console.log(`Verifying upload at prefix: ${verifyPrefix || '(root)'}`);
+    const objects = await listObjects(verifyPrefix, client, bucketName);
+    console.log(`R2 objects found at prefix: ${objects.length}`);
+    if (objects.length === 0) {
+      throw new Error(`Upload verification failed: no objects found at ${verifyPrefix || '(root)'}`);
+    }
+  }
+
+  client.destroy();
   return uploaded;
 }
