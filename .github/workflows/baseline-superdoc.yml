@@ -109,6 +109,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+          cache-dependency-path: devtools/visual-testing/pnpm-lock.yaml
 
       - name: Cache apt packages
         if: steps.version.outputs.skip != 'true'
@@ -133,6 +134,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.version.outputs.skip != 'true'
+        working-directory: devtools/visual-testing
         run: pnpm install
 
       - name: Get Playwright version
