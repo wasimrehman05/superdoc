@@ -136,7 +136,10 @@ All helpers are destructured from the second parameter of `run()`:
 ### Text Input
 | Helper | Description |
 |--------|-------------|
-| `type(text, options?)` | Type text into editor. Options: `{ delay?: number }` |
+| `type(text, options?)` | Type text into **main editor**. Options: `{ delay?: number }` |
+
+**Note:** For typing into non-editor inputs (comment inputs, dialogs), use `page.keyboard.type()` directly since the `type()` helper expects the main editor's contenteditable to be visible.
+
 | `press(key)` | Press single key (e.g., `'Enter'`, `'Backspace'`, `'ArrowLeft'`) |
 | `pressShortcut(key)` | Press with Cmd/Ctrl (e.g., `pressShortcut('a')` = Select All) |
 | `pressTimes(key, count)` | Press key N times |
@@ -228,8 +231,44 @@ import { clickOnCommentedText, clickOnLine } from '../../helpers/index.js';
 
 For advanced Playwright operations via `page`:
 
+**IMPORTANT:** Always scope selectors under `.harness-main` to avoid matching hidden/duplicate elements in the test harness:
+
+```typescript
+// GOOD - scoped to harness-main
+page.locator('.harness-main .overflow-icon')
+page.locator('.harness-main .comments-dialog')
+
+// BAD - may match hidden duplicates
+page.locator('.overflow-icon')
+page.locator('.comments-dialog')
+```
+
+**Exception:** Dropdowns, modals, and other elements rendered via Vue teleport are placed outside `.harness-main`. For these, use the selector directly:
+
+```typescript
+// Dropdown options (rendered via teleport)
+page.locator('.n-dropdown-option-body__label').filter({ hasText: 'Edit' })
+```
+
+**Hidden duplicates:** Some elements have hidden duplicates positioned off-screen (x: -9999). If you get a "strict mode violation" with multiple elements, use `.last()` to target the visible one:
+
+```typescript
+// Use .last() when there are hidden off-screen duplicates
+page.locator('.harness-main .overflow-icon').last()
+page.locator('.harness-main .comment-editing .sd-button.primary').last()
+```
+
+To debug in browser console:
+```javascript
+document.querySelectorAll('.your-selector').forEach((el, i) => {
+  const rect = el.getBoundingClientRect();
+  console.log(i, 'visible:', rect.width > 0 && rect.x > 0, rect);
+})
+```
+
 | Selector | Description |
 |----------|-------------|
+| `.harness-main` | **Root container** - always use as ancestor for selectors |
 | `.superdoc-page` | Page container (one per page) |
 | `.superdoc-line` | Text line element |
 | `.superdoc-comment-highlight` | Comment highlight span |
