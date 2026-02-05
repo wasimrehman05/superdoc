@@ -190,7 +190,7 @@ jobs:
           pnpm superdoc "$VERSION"
 
           # Verify installation
-          INSTALLED=$(pnpm superdoc:version)
+          INSTALLED=$(node -p "require('./packages/harness/node_modules/superdoc/package.json').version")
           echo "Installed version: $INSTALLED"
 
           if [ "$INSTALLED" != "$VERSION" ]; then
