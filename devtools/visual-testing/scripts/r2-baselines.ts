@@ -655,6 +655,12 @@ export async function uploadDirectoryToR2(options: { localDir: string; remotePre
   let uploadedBytes = 0;
 
   for (const filePath of files) {
+    if (!showProgress) {
+      const announceEvery = files.length <= 50 ? 1 : 25;
+      if (uploaded % announceEvery === 0) {
+        console.log(`Uploading file ${uploaded + 1}/${files.length}...`);
+      }
+    }
     const relative = normalizePath(path.relative(localDir, filePath));
     const key = normalizedPrefix ? `${normalizedPrefix}/${relative}` : relative;
     const ext = path.extname(filePath).toLowerCase();
