@@ -913,6 +913,9 @@ importers:
       jszip:
         specifier: 'catalog:'
         version: 3.10.1
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.23
       marked:
         specifier: 'catalog:'
         version: 16.4.2
