@@ -37,6 +37,11 @@ pre-commit:
       glob: "apps/docs/**/*.mdx"
       run: pnpm run test:examples
 
+pre-push:
+  commands:
+    install-deps:
+      run: pnpm install
+
 commit-msg:
   commands:
     commitlint:
