@@ -1,11 +1,8 @@
 # Generates visual + interaction baselines for released SuperDoc versions
-# Triggered automatically after successful releases to npm
+# Triggered manually via workflow_dispatch
 name: 📸 Baseline superdoc
 
 on:
-  workflow_run:
-    workflows: ['📦 Release superdoc']
-    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -18,23 +15,20 @@ permissions:
   actions: write
 
 concurrency:
-  group: baseline-superdoc-${{ github.event.workflow_run.id || github.run_id }}
+  group: baseline-superdoc-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
   generate-baselines:
     name: Generate Baselines
     runs-on: ubuntu-24.04
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Resolve release version
         id: version
@@ -48,7 +42,7 @@ jobs:
           fi
 
           # Find tags pointing at the release commit
-          HEAD_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          HEAD_SHA="${{ github.sha }}"
           echo "Looking for tags at commit: $HEAD_SHA"
 
           # Get all tags pointing at this commit
@@ -75,13 +69,6 @@ jobs:
 
           if [ -z "$VERSION_TAG" ]; then
             echo "⚠️ No version tag (v*) found at commit"
-            echo "skip=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # For workflow_run, only baseline next channel tags
-          if [ "${{ github.event_name }}" != "workflow_dispatch" ] && [[ "$VERSION_TAG" != *"-next."* ]]; then
-            echo "⚠️ Found non-next tag ($VERSION_TAG); skipping baseline for workflow_run."
             echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -222,7 +209,7 @@ jobs:
           |----------|-------|
           | **Version** | \`$VERSION\` |
           | **Browsers** | Chromium, Firefox, WebKit |
-          | **Trigger** | ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Release workflow' }} |
+          | **Trigger** | Manual |
 
           ### R2 Paths
           - Visual: \`baselines/v.$VERSION/<browser>/\`
