@@ -21,7 +21,7 @@ const config = {
   ],
   tagFormat: 'v${version}',
   plugins: [
-    'semantic-release-commit-filter',
+    '../../scripts/superdoc-commit-filter.cjs',
     '@semantic-release/commit-analyzer',
     '@semantic-release/release-notes-generator',
     // NPM plugin MUST come before git plugin
