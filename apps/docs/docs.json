@@ -51,8 +51,8 @@
             "group": "Getting Started",
             "pages": [
               "getting-started/introduction",
+              "getting-started/quickstart",
               "getting-started/ai-agents",
-              "getting-started/installation",
               {
                 "group": "Frameworks",
                 "pages": [
@@ -71,7 +71,6 @@
             "pages": [
               {
                 "group": "SuperDoc",
-                "tag": "UDPATED",
                 "pages": [
                   "core/superdoc/overview",
                   "core/superdoc/configuration",
@@ -81,7 +80,6 @@
               },
               {
                 "group": "SuperEditor",
-                "tag": "UDPATED",
                 "pages": [
                   "core/supereditor/overview",
                   "core/supereditor/configuration",
@@ -299,7 +297,11 @@
     },
     {
       "source": "/guide/quick-start",
-      "destination": "/getting-started/installation"
+      "destination": "/getting-started/quickstart"
+    },
+    {
+      "source": "/getting-started/installation",
+      "destination": "/getting-started/quickstart"
     },
     {
       "source": "/guide/modes-roles",
