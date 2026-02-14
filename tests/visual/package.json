@@ -9,7 +9,7 @@
     "docs:upload": "tsx scripts/upload-test-doc.ts",
     "report": "playwright show-report",
     "harness": "vite --config harness/vite.config.ts harness/",
-    "postinstall": "playwright install --with-deps chromium firefox webkit"
+    "setup": "playwright install --with-deps chromium firefox webkit"
   },
   "dependencies": {
     "superdoc": "workspace:*"
