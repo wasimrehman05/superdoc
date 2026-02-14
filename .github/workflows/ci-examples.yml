@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example: [react, vue, vanilla, cdn]
+        example: [react, vue, vanilla, cdn, angular]
     steps:
       - uses: actions/checkout@v6
 
