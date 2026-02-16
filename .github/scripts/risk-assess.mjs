@@ -143,23 +143,36 @@ async function haikuTriage(pr, title, files, diff) {
   const Anthropic = (await import('@anthropic-ai/sdk')).default;
   const client = new Anthropic();
 
-  const start = Date.now();
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    tools: [HAIKU_TRIAGE_TOOL],
-    tool_choice: { type: 'tool', name: 'classify_risk' },
-    messages: [{ role: 'user', content: buildHaikuPrompt(files, diff) }],
-  });
-  const durationMs = Date.now() - start;
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const start = Date.now();
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        tools: [HAIKU_TRIAGE_TOOL],
+        tool_choice: { type: 'tool', name: 'classify_risk' },
+        messages: [{ role: 'user', content: buildHaikuPrompt(files, diff) }],
+      });
+      const durationMs = Date.now() - start;
 
-  const toolBlock = response.content.find(b => b.type === 'tool_use');
-  if (!toolBlock) {
-    throw new Error('Haiku did not call classify_risk tool');
+      const toolBlock = response.content.find(b => b.type === 'tool_use');
+      if (!toolBlock) {
+        throw new Error('Haiku did not call classify_risk tool');
+      }
+
+      const cost = (response.usage.input_tokens * 0.80 + response.usage.output_tokens * 4.0) / 1_000_000;
+      return { ...toolBlock.input, cost, durationMs };
+    } catch (err) {
+      if (err.status === 429 && attempt < MAX_RETRIES) {
+        const waitSec = attempt * 15;
+        console.log(`  Rate limited, retrying in ${waitSec}s (attempt ${attempt}/${MAX_RETRIES})...`);
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        continue;
+      }
+      throw err;
+    }
   }
-
-  const cost = (response.usage.input_tokens * 0.80 + response.usage.output_tokens * 4.0) / 1_000_000;
-  return { ...toolBlock.input, cost, durationMs };
 }
 
 // ── Layer 3: Sonnet deep analysis ────────────────────────────────────────────
