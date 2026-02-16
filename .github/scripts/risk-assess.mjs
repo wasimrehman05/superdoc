@@ -121,7 +121,7 @@ Classify this PR by reading the diff. Determine if changes are:
 
 Be conservative — when uncertain, classify higher.
 
-Reply with ONLY valid JSON, no markdown fences:
+IMPORTANT: Your entire response must be a single JSON object. No preamble, no explanation, no markdown.
 {"level":"critical|sensitive|low","confidence":"high|medium|low","change_type":"behavioral|additive|mechanical","summary":"One sentence","needs_deep_analysis":true|false,"reason_for_deep":"Why or why not"}`;
 }
 
@@ -129,35 +129,46 @@ async function haikuTriage(pr, title, files, diff) {
   const { query } = await import('@anthropic-ai/claude-agent-sdk');
   const prompt = buildHaikuPrompt(pr, title, files, diff);
 
-  let resultText = '';
-  let cost = 0;
-  let durationMs = 0;
+  let totalCost = 0;
+  const MAX_ATTEMPTS = 2;
 
-  for await (const msg of query({
-    prompt,
-    options: {
-      allowedTools: [],
-      permissionMode: 'bypassPermissions',
-      model: 'haiku',
-      maxTurns: 1,
-    },
-  })) {
-    if (msg.type === 'assistant' && msg.message?.content) {
-      for (const block of msg.message.content) {
-        if (block.type === 'text') resultText = block.text;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let resultText = '';
+    let cost = 0;
+    let durationMs = 0;
+
+    for await (const msg of query({
+      prompt,
+      options: {
+        allowedTools: [],
+        permissionMode: 'bypassPermissions',
+        model: 'haiku',
+        maxTurns: 1,
+      },
+    })) {
+      if (msg.type === 'assistant' && msg.message?.content) {
+        for (const block of msg.message.content) {
+          if (block.type === 'text') resultText = block.text;
+        }
+      }
+      if (msg.type === 'result') {
+        cost = msg.total_cost_usd || 0;
+        durationMs = msg.duration_api_ms || msg.duration_ms || 0;
       }
     }
-    if (msg.type === 'result') {
-      cost = msg.total_cost_usd || 0;
-      durationMs = msg.duration_api_ms || msg.duration_ms || 0;
+
+    totalCost += cost;
+    const parsed = extractJSON(resultText);
+    if (parsed) {
+      return { ...parsed, cost: totalCost, durationMs };
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      console.log(`  Haiku retry (no JSON in response)...`);
+    } else {
+      throw new Error(`Haiku failed to produce JSON: ${resultText.slice(0, 200)}`);
     }
   }
-
-  const parsed = extractJSON(resultText);
-  if (parsed) {
-    return { ...parsed, cost, durationMs };
-  }
-  throw new Error(`Haiku failed to produce JSON: ${resultText.slice(0, 200)}`);
 }
 
 // ── Layer 3: Sonnet deep analysis ────────────────────────────────────────────
