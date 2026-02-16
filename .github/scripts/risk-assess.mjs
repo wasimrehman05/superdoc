@@ -149,7 +149,7 @@ async function haikuTriage(pr, title, files, diff) {
     max_tokens: 512,
     tools: [HAIKU_TRIAGE_TOOL],
     tool_choice: { type: 'tool', name: 'classify_risk' },
-    messages: [{ role: 'user', content: buildHaikuPrompt(files.join('\n'), diff) }],
+    messages: [{ role: 'user', content: buildHaikuPrompt(files, diff) }],
   });
   const durationMs = Date.now() - start;
 
