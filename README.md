@@ -24,7 +24,7 @@
 
 <div align="center">
   <a href="https://www.superdoc.dev" target="_blank">
-    <img alt="SuperDoc editor screenshot" src="https://storage.googleapis.com/public_statichosting/SuperDocHomepage/screeenshot.png" width="600px" height="auto" />
+   <img width="800px" height="auto" alt="SuperDoc" src="https://github.com/user-attachments/assets/0d349b23-2fde-4bd2-adf4-e1ce4ace6526" />
   </a>
 </div>
 
