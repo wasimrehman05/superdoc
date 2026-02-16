@@ -45,6 +45,7 @@ Options:
       --auto-generate-reference       Generate missing reference snapshots automatically (default: on)
       --no-auto-generate-reference    Do not auto-generate missing reference snapshots
       --jobs <n>                      Worker count if auto-generating snapshots/references (default: 4)
+      --limit <n>                     Process at most n docs during generation and compare
       --pipeline <mode>               headless | presentation for auto-generation (default: headless)
       --installer <name>              auto | bun | npm for auto-generation (default: auto)
       --input-root <path>             Input docs root for auto-generation
@@ -118,6 +119,7 @@ function parseArgs(argv) {
     autoGenerateCandidate: true,
     autoGenerateReference: true,
     jobs: 4,
+    limit: undefined,
     pipeline: 'headless',
     installer: 'auto',
     inputRoot: null,
@@ -192,6 +194,15 @@ function parseArgs(argv) {
         throw new Error(`Invalid --jobs value "${next}".`);
       }
       args.jobs = Math.floor(parsed);
+      i += 1;
+      continue;
+    }
+    if (arg === '--limit' && next) {
+      const parsed = Number(next);
+      if (!Number.isFinite(parsed) || parsed < 1) {
+        throw new Error(`Invalid --limit value "${next}".`);
+      }
+      args.limit = Math.floor(parsed);
       i += 1;
       continue;
     }
@@ -718,6 +729,9 @@ async function runNpmReferenceGeneration({ referenceSpecifier, args }) {
     '--installer',
     args.installer,
   ];
+  if (typeof args.limit === 'number') {
+    childArgs.push('--limit', String(args.limit));
+  }
   if (args.inputRoot) {
     childArgs.push('--input-root', path.resolve(args.inputRoot));
   }
@@ -778,6 +792,9 @@ async function runCandidateGeneration({ candidateRoot, args }) {
     args.pipeline,
     '--disable-telemetry',
   ];
+  if (typeof args.limit === 'number') {
+    childArgs.push('--limit', String(args.limit));
+  }
   if (args.inputRoot) {
     childArgs.push('--input-root', path.resolve(args.inputRoot));
   }
@@ -1013,6 +1030,13 @@ async function main() {
   let candidatePaths = [...candidateFiles.keys()].sort();
   let referencePaths = [...referenceFiles.keys()].sort();
 
+  if (typeof args.limit === 'number') {
+    const limitedCandidatePaths = candidatePaths.slice(0, args.limit);
+    const limitedCandidateSet = new Set(limitedCandidatePaths);
+    candidatePaths = limitedCandidatePaths;
+    referencePaths = referencePaths.filter((relPath) => limitedCandidateSet.has(relPath));
+  }
+
   let relation = buildPathRelation(candidatePaths, referencePaths);
 
   if (
@@ -1040,6 +1064,10 @@ async function main() {
 
     referenceFiles = await listSnapshotFiles(referenceRoot);
     referencePaths = [...referenceFiles.keys()].sort();
+    if (typeof args.limit === 'number') {
+      const limitedCandidateSet = new Set(candidatePaths);
+      referencePaths = referencePaths.filter((relPath) => limitedCandidateSet.has(relPath));
+    }
     relation = buildPathRelation(candidatePaths, referencePaths);
   }
 
@@ -1055,6 +1083,9 @@ async function main() {
   console.log(`[layout-snapshots:compare] Candidate root: ${candidateRoot}`);
   console.log(`[layout-snapshots:compare] Reference root: ${referenceRoot}`);
   console.log(`[layout-snapshots:compare] Report dir:     ${reportDir}`);
+  if (typeof args.limit === 'number') {
+    console.log(`[layout-snapshots:compare] Limit:          ${args.limit}`);
+  }
 
   const changedDocs = [];
   let unchangedDocCount = 0;
@@ -1225,6 +1256,7 @@ async function main() {
     referenceLabel: resolvedReferenceLabel,
     candidateGenerated,
     referenceGenerated,
+    limit: args.limit ?? null,
     candidateDocCount: candidatePaths.length,
     referenceDocCount: referencePaths.length,
     matchedDocCount: relation.matched.length,
