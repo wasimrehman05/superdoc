@@ -476,7 +476,37 @@ export function writeHtmlReport(
         border-color: rgba(82, 212, 166, 0.6);
       }
 
+      .reject-btn {
+        border: 1px solid rgba(251, 146, 60, 0.55);
+        background: rgba(251, 146, 60, 0.15);
+        color: #9a3412;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.15s ease;
+      }
+
+      .reject-btn:hover {
+        background: rgba(251, 146, 60, 0.28);
+        border-color: rgba(251, 146, 60, 0.75);
+      }
+
+      details.group.rejected .reject-btn {
+        background: rgba(251, 146, 60, 0.32);
+        border-color: rgba(194, 65, 12, 0.7);
+        color: #7c2d12;
+      }
+
+      details.group.rejected {
+        border-color: rgba(251, 146, 60, 0.5);
+      }
+
       .word-btn,
+      .copy-path-btn,
       .word-overlay-btn {
         border: 1px solid rgba(15, 25, 45, 0.18);
         background: rgba(15, 25, 45, 0.06);
@@ -491,6 +521,7 @@ export function writeHtmlReport(
       }
 
       .word-btn:hover:not(:disabled),
+      .copy-path-btn:hover:not(:disabled),
       .word-overlay-btn:hover:not(:disabled) {
         background: rgba(15, 25, 45, 0.12);
         border-color: rgba(15, 25, 45, 0.28);
@@ -787,6 +818,7 @@ export function writeHtmlReport(
       </div>
       <div class="actions">
         <button class="secondary" id="toggle-layout">Show side-by-side</button>
+        <button class="secondary" id="export-rejected" hidden>Export rejected docs list</button>
         <button class="secondary" id="toggle-lens">Disable magnifier</button>
         <button class="secondary" id="toggle-unchanged">Hide unchanged</button>
         <button class="secondary" id="toggle-approved">Show approved</button>
@@ -811,6 +843,7 @@ export function writeHtmlReport(
       const zoomLens = document.getElementById('zoom-lens');
       const toggleLensButton = document.getElementById('toggle-lens');
       const toggleLayoutButton = document.getElementById('toggle-layout');
+      const exportRejectedButton = document.getElementById('export-rejected');
 
       const diffs = report.results.filter((item) => !item.passed);
       const showAll = ${JSON.stringify(showAll)};
@@ -819,6 +852,8 @@ export function writeHtmlReport(
 
       // Approval state (session only, resets on refresh)
       const approved = new Set();
+      const rejectedGroups = new Set();
+      const buttonTimers = new WeakMap();
 
       const resultsFolderName = (report.resultsFolder || '').replace(/\\\\/g, '/');
       const resultsPrefix = resultsFolderName ? resultsFolderName + '/' : '';
@@ -852,6 +887,79 @@ export function writeHtmlReport(
         const parsed = Number.parseInt(match[1], 10);
         if (!Number.isFinite(parsed) || parsed <= 0) return null;
         return parsed;
+      }
+
+      function setTemporaryButtonLabel(button, text, ms) {
+        if (!(button instanceof HTMLButtonElement)) return;
+        const defaultText = button.dataset.defaultText || button.textContent || '';
+        const existingTimer = buttonTimers.get(button);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+        }
+        button.textContent = text;
+        const timer = setTimeout(() => {
+          button.textContent = defaultText;
+          buttonTimers.delete(button);
+        }, ms);
+        buttonTimers.set(button, timer);
+      }
+
+      /** @deprecated fallback for browsers without navigator.clipboard — remove when no longer needed */
+      function copyTextWithFallback(value) {
+        const textArea = document.createElement('textarea');
+        textArea.value = value;
+        textArea.setAttribute('readonly', 'true');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        let copied = false;
+        try {
+          copied = typeof document.execCommand === 'function' && document.execCommand('copy');
+        } catch (_error) {
+          copied = false;
+        }
+        textArea.remove();
+        return copied;
+      }
+
+      async function copyToClipboard(value) {
+        if (!value) return false;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch (_error) {
+            return copyTextWithFallback(value);
+          }
+        }
+        return copyTextWithFallback(value);
+      }
+
+      function updateRejectedExportButton() {
+        if (!exportRejectedButton) return;
+        exportRejectedButton.hidden = rejectedGroups.size === 0;
+      }
+
+      function exportRejectedDocsList() {
+        if (rejectedGroups.size === 0) return;
+        const rejectedDocs = Array.from(rejectedGroups)
+          .sort((a, b) => a.localeCompare(b))
+          .map((groupName) => (groupName === '.' ? '(root)' : groupName));
+        const reportName = resultsFolderName || 'report';
+        const fileName = reportName + '-rejected-docs.txt';
+        const content = rejectedDocs.join('\\n') + '\\n';
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
       }
 
       function createWordOverlayController(sourceDoc) {
@@ -1360,6 +1468,7 @@ export function writeHtmlReport(
       groupEntries.forEach(([dir, items]) => {
         const details = document.createElement('details');
         details.className = 'group';
+        details.dataset.group = dir;
         details.open = false;
 
         const summary = document.createElement('summary');
@@ -1413,6 +1522,22 @@ export function writeHtmlReport(
 
           actionWrap.appendChild(wordBtn);
 
+          const copyPathBtn = document.createElement('button');
+          copyPathBtn.type = 'button';
+          copyPathBtn.className = 'copy-path-btn';
+          copyPathBtn.textContent = 'Copy doc path';
+          copyPathBtn.dataset.defaultText = 'Copy doc path';
+          const copyDocPath =
+            (sourceDoc && sourceDoc.originalLocalPath) || (sourceDoc && sourceDoc.localPath) || '';
+          if (copyDocPath) {
+            copyPathBtn.dataset.docPath = copyDocPath;
+            copyPathBtn.title = 'Copy full local path to clipboard';
+          } else {
+            copyPathBtn.disabled = true;
+            copyPathBtn.title = 'Doc path not available locally.';
+          }
+          actionWrap.appendChild(copyPathBtn);
+
           wordOverlayController = createWordOverlayController(sourceDoc);
           actionWrap.appendChild(wordOverlayController.button);
         }
@@ -1423,6 +1548,13 @@ export function writeHtmlReport(
         approveBtn.textContent = 'Approve doc';
         approveBtn.dataset.group = dir;
         actionWrap.appendChild(approveBtn);
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.type = 'button';
+        rejectBtn.className = 'reject-btn';
+        rejectBtn.textContent = 'Reject doc';
+        rejectBtn.dataset.groupReject = dir;
+        actionWrap.appendChild(rejectBtn);
 
         summary.appendChild(titleWrap);
         summary.appendChild(count);
@@ -1758,6 +1890,19 @@ export function writeHtmlReport(
       }
 
       groupsContainer.addEventListener('click', (event) => {
+        const copyPathBtn = event.target.closest('.copy-path-btn');
+        if (copyPathBtn) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (copyPathBtn.disabled) return;
+          const docPath = copyPathBtn.dataset.docPath;
+          if (!docPath) return;
+          copyToClipboard(docPath).then((didCopy) => {
+            setTemporaryButtonLabel(copyPathBtn, didCopy ? 'Copied' : 'Copy failed', didCopy ? 1300 : 1800);
+          });
+          return;
+        }
+
         const openWordBtn = event.target.closest('.word-btn');
         if (openWordBtn) {
           event.preventDefault();
@@ -1767,6 +1912,54 @@ export function writeHtmlReport(
           if (wordUrl) {
             window.location.assign(wordUrl);
           }
+          return;
+        }
+
+        const rejectBtn = event.target.closest('.reject-btn');
+        if (rejectBtn) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const group = rejectBtn.closest('details.group');
+          if (!group) return;
+          const groupName = rejectBtn.dataset.groupReject;
+          if (!groupName) return;
+          const groupKey = 'group:' + groupName;
+          const isRejected = group.classList.contains('rejected');
+          const approveBtn = group.querySelector('.approve-btn[data-group]');
+
+          if (isRejected) {
+            group.classList.remove('rejected');
+            rejectBtn.textContent = 'Reject doc';
+            rejectedGroups.delete(groupName);
+          } else {
+            const cards = group.querySelectorAll('.diff-card');
+            cards.forEach((card) => {
+              if (!card.classList.contains('approved')) return;
+              card.classList.remove('approved');
+              const cardBtn = card.querySelector('.approve-btn[data-card]');
+              if (cardBtn) {
+                cardBtn.textContent = 'Approve';
+              }
+              const cardKey = cardBtn ? 'card:' + cardBtn.dataset.card : '';
+              if (cardKey) {
+                approved.delete(cardKey);
+              }
+            });
+
+            group.classList.remove('approved');
+            if (approveBtn) {
+              approveBtn.textContent = 'Approve doc';
+            }
+            approved.delete(groupKey);
+
+            group.classList.add('rejected');
+            rejectBtn.textContent = 'Unreject doc';
+            rejectedGroups.add(groupName);
+          }
+
+          updateRejectedExportButton();
+          updateGroupCounts();
           return;
         }
 
@@ -1783,6 +1976,7 @@ export function writeHtmlReport(
 
           const groupKey = 'group:' + btn.dataset.group;
           const isApproved = group.classList.contains('approved');
+          const rejectBtn = group.querySelector('.reject-btn[data-group-reject]');
 
           // Approve/unapprove all cards inside this group
           const cards = group.querySelectorAll('.diff-card');
@@ -1805,6 +1999,17 @@ export function writeHtmlReport(
             btn.textContent = 'Approve doc';
             approved.delete(groupKey);
           } else {
+            if (group.classList.contains('rejected')) {
+              group.classList.remove('rejected');
+              const groupName = btn.dataset.group;
+              if (groupName) {
+                rejectedGroups.delete(groupName);
+              }
+              if (rejectBtn) {
+                rejectBtn.textContent = 'Reject doc';
+              }
+              updateRejectedExportButton();
+            }
             group.classList.add('approved');
             btn.textContent = 'Unapprove doc';
             approved.add(groupKey);
@@ -1853,6 +2058,15 @@ export function writeHtmlReport(
           updateGroupCounts();
         });
       }
+
+      if (exportRejectedButton) {
+        exportRejectedButton.dataset.defaultText = 'Export rejected docs list';
+        exportRejectedButton.addEventListener('click', () => {
+          exportRejectedDocsList();
+          setTemporaryButtonLabel(exportRejectedButton, 'Exported', 1400);
+        });
+      }
+      updateRejectedExportButton();
 
       // Initial count update
       updateGroupCounts();

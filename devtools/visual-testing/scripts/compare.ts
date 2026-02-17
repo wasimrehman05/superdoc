@@ -168,6 +168,8 @@ export interface InteractionMetadata {
 export interface SourceDocMetadata {
   /** Corpus-relative path of the source document (e.g. "tables/basic.docx") */
   relativePath: string;
+  /** Absolute local path to the original source document (corpus location/cache file) */
+  originalLocalPath: string;
   /** Absolute local path to the (possibly staged) copy of the document */
   localPath: string;
   /** ms-word: protocol deep-link URL (macOS only) */
@@ -966,6 +968,7 @@ async function augmentReportWithSourceDocs(
 
         sourceDocByKey.set(docKey, {
           relativePath: docInfo.relativePath,
+          originalLocalPath: localPath,
           localPath: openPath,
           wordUrl: toWordDeepLink(openPath),
         });
