@@ -387,6 +387,9 @@ importers:
       semantic-release-pnpm:
         specifier: ^1.0.2
         version: 1.0.2(semantic-release@24.2.9(typescript@5.9.3))
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -629,6 +632,8 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.2)(esbuild@0.27.2)(happy-dom@20.4.0)(jiti@2.6.1)(jsdom@27.3.0(canvas@3.2.0))(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/document-api: {}
 
   packages/esign:
     devDependencies:
@@ -1072,6 +1077,9 @@ importers:
       '@superdoc/contracts':
         specifier: workspace:*
         version: link:../layout-engine/contracts
+      '@superdoc/document-api':
+        specifier: workspace:*
+        version: link:../document-api
       '@superdoc/layout-bridge':
         specifier: workspace:*
         version: link:../layout-engine/layout-bridge
