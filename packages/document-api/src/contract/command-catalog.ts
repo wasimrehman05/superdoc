@@ -1,5 +1,5 @@
 import type { CommandCatalog, CommandStaticMetadata } from './types.js';
-import { OPERATION_IDS, projectFromDefinitions  } from './operation-definitions.js';
+import { OPERATION_IDS, projectFromDefinitions } from './operation-definitions.js';
 
 export const COMMAND_CATALOG: CommandCatalog = projectFromDefinitions((_id, entry) => entry.metadata);
 
