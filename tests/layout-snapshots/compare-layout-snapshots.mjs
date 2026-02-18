@@ -394,6 +394,25 @@ async function runCommand(command, commandArgs, options = {}) {
   });
 }
 
+async function runCommandCapture(command, commandArgs, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, commandArgs, {
+      cwd: options.cwd ?? process.cwd(),
+      env: options.env ?? process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const chunks = [];
+    child.stdout.on('data', (data) => chunks.push(data));
+    child.stderr.on('data', (data) => chunks.push(data));
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      resolve({ exitCode: code ?? 1, output: Buffer.concat(chunks).toString('utf8') });
+    });
+  });
+}
+
 async function runCorpusPull() {
   const exitCode = await runCommand('pnpm', ['corpus:pull'], { cwd: REPO_ROOT });
   if (exitCode !== 0) {
@@ -999,6 +1018,15 @@ async function main() {
   }
 
   if (args.autoGenerateCandidate) {
+    process.stdout.write('[layout-snapshots:compare] Packing SuperDoc...');
+    const packResult = await runCommandCapture('pnpm', ['run', 'pack:es'], { cwd: REPO_ROOT });
+    if (packResult.exitCode !== 0) {
+      console.log(' FAILED');
+      console.error(packResult.output);
+      throw new Error(`"pnpm run pack:es" failed with exit code ${packResult.exitCode}.`);
+    }
+    console.log(' done');
+
     console.log(`[layout-snapshots:compare] Refreshing candidate snapshots at ${candidateRoot}...`);
     await runCandidateGeneration({
       candidateRoot,
