@@ -160,7 +160,14 @@ vi.mock('../../Editor', () => {
       getJSON: vi.fn(() => ({ type: 'doc', content: [] })),
       isEditable: true,
       state: {
-        selection: { from: 0, to: 0 },
+        selection: {
+          from: 0,
+          to: 0,
+          $from: {
+            depth: 0,
+            node: vi.fn(),
+          },
+        },
         doc: {
           nodeSize: 100,
           content: {
@@ -2970,7 +2977,14 @@ describe('PresentationEditor', () => {
         // Wait for initial render to complete so timers/RAF have settled.
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        mockEditorInstance.state.selection = { from: 5, to: 5 };
+        mockEditorInstance.state.selection = {
+          from: 5,
+          to: 5,
+          $from: {
+            depth: 0,
+            node: vi.fn(),
+          },
+        };
 
         const onCalls = mockEditorInstance.on as unknown as Mock;
         const selectionUpdateCall = onCalls.mock.calls.find((call) => call[0] === 'selectionUpdate');
@@ -3003,7 +3017,14 @@ describe('PresentationEditor', () => {
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        mockEditorInstance.state.selection = { from: 1, to: 6 };
+        mockEditorInstance.state.selection = {
+          from: 1,
+          to: 6,
+          $from: {
+            depth: 0,
+            node: vi.fn(),
+          },
+        };
         (mockEditorInstance.state.doc as unknown as { textBetween?: () => string }).textBetween = () => 'Hello world';
 
         const onCalls = mockEditorInstance.on as unknown as Mock;

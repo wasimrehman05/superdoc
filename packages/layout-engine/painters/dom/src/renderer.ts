@@ -790,6 +790,7 @@ export class DomPainter {
   private footerProvider?: PageDecorationProvider;
   private totalPages = 0;
   private linkIdCounter = 0; // Counter for generating unique link IDs
+  private sdtLabelsRendered = new Set<string>(); // Tracks SDT labels rendered across pages
 
   /**
    * WeakMap storing tooltip data for hyperlink elements before DOM insertion.
@@ -1012,6 +1013,7 @@ export class DomPainter {
       throw new Error('DomPainter.paint requires a DOM-like document');
     }
     this.doc = doc;
+    this.sdtLabelsRendered.clear(); // Reset SDT label tracking for new render cycle
 
     // Simple transaction gate: only use position mapping optimization for single-step transactions.
     // Complex transactions (paste, multi-step replace, etc.) fall back to full rebuild.
@@ -1309,6 +1311,9 @@ export class DomPainter {
     this.updateSpacersForMountedPages(mounted);
     this.clearGapSpacers();
 
+    // Reset SDT label tracking so remounted start fragments get their labels back.
+    this.sdtLabelsRendered.clear();
+
     // Remove pages that are no longer needed
     for (const [idx, state] of this.pageIndexToState.entries()) {
       if (!needed.has(idx)) {
@@ -1479,7 +1484,7 @@ export class DomPainter {
       pageNumberText: page.numberText,
     };
 
-    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup);
+    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup, this.sdtLabelsRendered);
 
     page.fragments.forEach((fragment, index) => {
       const sdtBoundary = sdtBoundaries.get(index);
@@ -1791,7 +1796,7 @@ export class DomPainter {
 
     const existing = new Map(state.fragments.map((frag) => [frag.key, frag]));
     const nextFragments: FragmentDomState[] = [];
-    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup);
+    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup, this.sdtLabelsRendered);
 
     const contextBase: FragmentRenderContext = {
       pageNumber: page.number,
@@ -1937,7 +1942,7 @@ export class DomPainter {
       section: 'body',
     };
 
-    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup);
+    const sdtBoundaries = computeSdtBoundaries(page.fragments, this.blockLookup, this.sdtLabelsRendered);
     const fragmentStates: FragmentDomState[] = page.fragments.map((fragment, index) => {
       const sdtBoundary = sdtBoundaries.get(index);
       const fragmentEl = this.renderFragment(fragment, contextBase, sdtBoundary);
@@ -3514,6 +3519,7 @@ export class DomPainter {
       renderDrawingContent: renderDrawingContentForTableCell,
       applyFragmentFrame: applyFragmentFrameWithSection,
       applySdtDataset: this.applySdtDataset.bind(this),
+      applyContainerSdtDataset: this.applyContainerSdtDataset.bind(this),
       applyStyles,
     });
   }
@@ -5443,9 +5449,45 @@ const getFragmentSdtContainerKey = (fragment: Fragment, blockLookup: BlockLookup
   return null;
 };
 
+const getFragmentHeight = (fragment: Fragment, blockLookup: BlockLookup): number => {
+  if (fragment.kind === 'table' || fragment.kind === 'image' || fragment.kind === 'drawing') {
+    return fragment.height;
+  }
+
+  const lookup = blockLookup.get(fragment.blockId);
+  if (!lookup) return 0;
+
+  if (fragment.kind === 'para' && lookup.measure.kind === 'paragraph') {
+    const measure = lookup.measure;
+    const lines = fragment.lines ?? measure.lines.slice(fragment.fromLine, fragment.toLine);
+    if (lines.length === 0) return 0;
+    let totalHeight = 0;
+    for (const line of lines) {
+      totalHeight += line.lineHeight ?? 0;
+    }
+    return totalHeight;
+  }
+
+  if (fragment.kind === 'list-item' && lookup.measure.kind === 'list') {
+    const listMeasure = lookup.measure as ListMeasure;
+    const item = listMeasure.items.find((it) => it.itemId === fragment.itemId);
+    if (!item) return 0;
+    const lines = item.paragraph.lines.slice(fragment.fromLine, fragment.toLine);
+    if (lines.length === 0) return 0;
+    let totalHeight = 0;
+    for (const line of lines) {
+      totalHeight += line.lineHeight ?? 0;
+    }
+    return totalHeight;
+  }
+
+  return 0;
+};
+
 const computeSdtBoundaries = (
   fragments: readonly Fragment[],
   blockLookup: BlockLookup,
+  sdtLabelsRendered: Set<string>,
 ): Map<number, SdtBoundaryOptions> => {
   const boundaries = new Map<number, SdtBoundaryOptions>();
   const containerKeys = fragments.map((fragment) => getFragmentSdtContainerKey(fragment, blockLookup));
@@ -5471,10 +5513,31 @@ const computeSdtBoundaries = (
 
     for (let k = i; k <= j; k += 1) {
       const fragment = fragments[k];
+      const isStart = k === i;
+      const isEnd = k === j;
+
+      let paddingBottomOverride: number | undefined;
+      if (!isEnd) {
+        const nextFragment = fragments[k + 1];
+        const currentHeight = getFragmentHeight(fragment, blockLookup);
+        const currentBottom = fragment.y + currentHeight;
+        const gapToNext = nextFragment.y - currentBottom;
+        if (gapToNext > 0) {
+          paddingBottomOverride = gapToNext;
+        }
+      }
+
+      const showLabel = isStart && !sdtLabelsRendered.has(currentKey);
+      if (showLabel) {
+        sdtLabelsRendered.add(currentKey);
+      }
+
       boundaries.set(k, {
-        isStart: k === i,
-        isEnd: k === j,
+        isStart,
+        isEnd,
         widthOverride: groupRight - fragment.x,
+        paddingBottomOverride,
+        showLabel,
       });
     }
 
@@ -5568,6 +5631,24 @@ const fragmentSignature = (fragment: Fragment, lookup: BlockLookup): string => {
     ].join('|');
   }
   return base;
+};
+
+const getSdtMetadataId = (metadata: SdtMetadata | null | undefined): string => {
+  if (!metadata) return '';
+  if ('id' in metadata && metadata.id != null) {
+    return String(metadata.id);
+  }
+  return '';
+};
+
+const getSdtMetadataLockMode = (metadata: SdtMetadata | null | undefined): string => {
+  if (!metadata) return '';
+  return metadata.type === 'structuredContent' ? (metadata.lockMode ?? '') : '';
+};
+
+const getSdtMetadataVersion = (metadata: SdtMetadata | null | undefined): string => {
+  if (!metadata) return '';
+  return [metadata.type, getSdtMetadataLockMode(metadata), getSdtMetadataId(metadata)].join(':');
 };
 
 /**
@@ -5766,8 +5847,12 @@ const deriveBlockVersion = (block: FlowBlock): string => {
         ].join(':')
       : '';
 
-    // Combine marker version, runs version, and paragraph attrs version
-    const parts = [markerVersion, runsVersion, paragraphAttrsVersion].filter(Boolean);
+    // Include SDT metadata so lock-mode (and other SDT property) changes invalidate the cache.
+    const sdtAttrs = (block.attrs as ParagraphAttrs | undefined)?.sdt;
+    const sdtVersion = getSdtMetadataVersion(sdtAttrs);
+
+    // Combine marker version, runs version, paragraph attrs version, and SDT version
+    const parts = [markerVersion, runsVersion, paragraphAttrsVersion, sdtVersion].filter(Boolean);
     return parts.join('|');
   }
 
@@ -5776,6 +5861,8 @@ const deriveBlockVersion = (block: FlowBlock): string => {
   }
 
   if (block.kind === 'image') {
+    const imgSdt = (block as ImageBlock).attrs?.sdt;
+    const imgSdtVersion = getSdtMetadataVersion(imgSdt);
     return [
       block.src ?? '',
       block.width ?? '',
@@ -5783,6 +5870,7 @@ const deriveBlockVersion = (block: FlowBlock): string => {
       block.alt ?? '',
       block.title ?? '',
       resolveBlockClipPath(block),
+      imgSdtVersion,
     ].join('|');
   }
 
@@ -5974,6 +6062,12 @@ const deriveBlockVersion = (block: FlowBlock): string => {
       }
       if (tblAttrs.cellSpacing !== undefined) {
         hash = hashNumber(hash, tblAttrs.cellSpacing);
+      }
+      // Include SDT metadata so lock-mode changes invalidate the cache.
+      if (tblAttrs.sdt) {
+        hash = hashString(hash, tblAttrs.sdt.type);
+        hash = hashString(hash, getSdtMetadataLockMode(tblAttrs.sdt));
+        hash = hashString(hash, getSdtMetadataId(tblAttrs.sdt));
       }
     }
 
