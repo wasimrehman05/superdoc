@@ -1,5 +1,5 @@
 import { NodeSelection, Selection, TextSelection } from 'prosemirror-state';
-import { SlashMenuPluginKey } from '@extensions/slash-menu/slash-menu.js';
+import { ContextMenuPluginKey } from '@extensions/context-menu/context-menu.js';
 import { CellSelection } from 'prosemirror-tables';
 import type { EditorState, Transaction } from 'prosemirror-state';
 import type { Node as ProseMirrorNode, Mark } from 'prosemirror-model';
@@ -781,7 +781,7 @@ export class PresentationEditor extends EventEmitter {
    * - In body mode, returns the main editor's state
    * - In header/footer mode, returns the active header/footer editor's state
    *
-   * This enables components like SlashMenu and context menus to access document
+   * This enables components like ContextMenu to access document
    * state, selection, and schema information in the correct editing context.
    *
    * @returns The EditorState for the active editor
@@ -826,7 +826,7 @@ export class PresentationEditor extends EventEmitter {
    *
    * This property returns the options object from the appropriate editor instance,
    * providing access to configuration like document mode, AI settings, and custom
-   * slash menu configuration.
+   * context menu configuration.
    *
    * @returns The options object for the active editor
    *
@@ -3659,8 +3659,8 @@ export class PresentationEditor extends EventEmitter {
 
     const activeEditor = this.getActiveEditor();
     const hasFocus = activeEditor?.view?.hasFocus?.() ?? false;
-    // Keep selection visible when context menu (SlashMenu) is open
-    const slashMenuOpen = activeEditor?.state ? !!SlashMenuPluginKey.getState(activeEditor.state)?.open : false;
+    // Keep selection visible when context menu is open.
+    const contextMenuOpen = activeEditor?.state ? !!ContextMenuPluginKey.getState(activeEditor.state)?.open : false;
 
     // Keep selection visible when focus is on editor UI surfaces (toolbar, dropdowns).
     // Naive-UI portals dropdown content under .v-binder-follower-content at <body> level,
@@ -3668,7 +3668,7 @@ export class PresentationEditor extends EventEmitter {
     const activeEl = document.activeElement;
     const isOnEditorUi = !!(activeEl as Element)?.closest?.('[data-editor-ui-surface], .v-binder-follower-content');
 
-    if (!hasFocus && !slashMenuOpen && !isOnEditorUi) {
+    if (!hasFocus && !contextMenuOpen && !isOnEditorUi) {
       try {
         this.#clearSelectedFieldAnnotationClass();
         this.#localSelectionLayer.innerHTML = '';
