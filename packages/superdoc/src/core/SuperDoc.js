@@ -103,6 +103,8 @@ export class SuperDoc extends EventEmitter {
 
     isDev: false,
 
+    disablePiniaDevtools: false,
+
     // Events
     onEditorBeforeCreate: () => null,
     onEditorCreate: () => null,
@@ -401,7 +403,9 @@ export class SuperDoc extends EventEmitter {
   }
 
   #initVueApp() {
-    const { app, pinia, superdocStore, commentsStore, highContrastModeStore } = createSuperdocVueApp();
+    const { app, pinia, superdocStore, commentsStore, highContrastModeStore } = createSuperdocVueApp({
+      disablePiniaDevtools: Boolean(this.config.disablePiniaDevtools),
+    });
     this.app = app;
     this.pinia = pinia;
     this.app.config.globalProperties.$config = this.config;
