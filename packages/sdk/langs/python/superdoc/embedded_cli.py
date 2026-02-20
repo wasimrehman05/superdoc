@@ -64,7 +64,7 @@ def resolve_embedded_cli_path() -> str:
 
     if binary_path is None:
         raise SuperDocError(
-            'Embedded SuperDoc CLI binary is missing for this platform.',
+            'Embedded SuperDoc CLI binary is missing for this platform. Set SUPERDOC_CLI_BIN to a compatible superdoc binary path.',
             code='CLI_BINARY_MISSING',
             details={'target': target, 'binary': binary_name},
         )

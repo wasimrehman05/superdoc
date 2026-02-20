@@ -196,7 +196,8 @@ function buildSdkContract() {
     sourceHash,
     cli: {
       package: cliPkg.name,
-      minVersion: cliPkg.version,
+      // Envelope meta.version is contract-version-based today, so minVersion must match that domain.
+      minVersion: docApiContract.contractVersion,
     },
     protocol: {
       version: HOST_PROTOCOL_VERSION,

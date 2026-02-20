@@ -19,24 +19,28 @@ The package bundles a native CLI binary for your platform. Supported platforms:
 ## Quick start
 
 ```python
-from superdoc import SuperDocClient
+import asyncio
 
-client = SuperDocClient()
+from superdoc import AsyncSuperDocClient
 
-await client.doc.open(doc="./contract.docx")
 
-info = await client.doc.info()
-print(info["counts"])
+async def main():
+    client = AsyncSuperDocClient()
 
-results = await client.doc.find(query={"kind": "text", "pattern": "termination"})
+    await client.doc.open({"doc": "./contract.docx"})
 
-await client.doc.replace(
-    target=results["context"][0]["textRanges"][0],
-    text="expiration",
-)
+    info = await client.doc.info({})
+    print(info["counts"])
 
-await client.doc.save(in_place=True)
-await client.doc.close()
+    results = await client.doc.find({"query": {"kind": "text", "pattern": "termination"}})
+    target = results["context"][0]["textRanges"][0]
+
+    await client.doc.replace({"target": target, "text": "expiration"})
+    await client.doc.save({"inPlace": True})
+    await client.doc.close({})
+
+
+asyncio.run(main())
 ```
 
 ## API

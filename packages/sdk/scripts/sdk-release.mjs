@@ -11,10 +11,15 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '../../../');
+const CLI_APP_DIR = path.join(REPO_ROOT, 'apps/cli');
 const NODE_SDK_DIR = path.join(REPO_ROOT, 'packages/sdk/langs/node');
 const PYTHON_SDK_DIR = path.join(REPO_ROOT, 'packages/sdk/langs/python');
+const PYTHON_VENDOR_CLI_DIR = path.join(PYTHON_SDK_DIR, 'superdoc', '_vendor', 'cli');
+const STAGE_PYTHON_EMBEDDED_SCRIPT = path.join(REPO_ROOT, 'packages/sdk/scripts/stage-python-embedded-cli.mjs');
 const TOOLS_SOURCE = path.join(REPO_ROOT, 'packages/sdk/tools');
 const NPM_CACHE_DIR = path.join(REPO_ROOT, '.cache', 'npm');
+
+const PYTHON_EMBEDDED_TARGETS = ['darwin-arm64', 'darwin-x64', 'linux-x64', 'linux-arm64', 'windows-x64'];
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes('--dry-run');
@@ -114,21 +119,31 @@ async function main() {
   // Python publishing is handled by the release-sdk.yml workflow via PyPI trusted publishing (OIDC).
   // This script only builds the wheel for local verification.
   console.log('\n--- Python SDK (build only — publish via release-sdk.yml workflow) ---');
+  await run('pnpm', ['--prefix', CLI_APP_DIR, 'run', 'build:native:all']);
+  await run('pnpm', ['--prefix', CLI_APP_DIR, 'run', 'build:stage']);
+
   const pythonToolsSymlink = path.join(PYTHON_SDK_DIR, 'superdoc', 'tools');
 
-  await withMaterializedTools(pythonToolsSymlink, '../../../tools', async () => {
-    await rm(path.join(PYTHON_SDK_DIR, 'dist'), { recursive: true, force: true });
-    await rm(path.join(PYTHON_SDK_DIR, 'build'), { recursive: true, force: true });
+  try {
+    await withMaterializedTools(pythonToolsSymlink, '../../../tools', async () => {
+      await rm(path.join(PYTHON_SDK_DIR, 'dist'), { recursive: true, force: true });
+      await rm(path.join(PYTHON_SDK_DIR, 'build'), { recursive: true, force: true });
 
-    await run('python3', ['-m', 'build'], { cwd: PYTHON_SDK_DIR });
-    console.log('  Python wheel built. Use the release-sdk.yml workflow to publish to PyPI.');
+      await run('node', [STAGE_PYTHON_EMBEDDED_SCRIPT]);
+      await run('python3', ['-m', 'build'], { cwd: PYTHON_SDK_DIR });
+      console.log('  Python wheel built. Use the release-sdk.yml workflow to publish to PyPI.');
 
-    // Clean build artifacts
-    await rm(path.join(PYTHON_SDK_DIR, 'dist'), { recursive: true, force: true });
-    await rm(path.join(PYTHON_SDK_DIR, 'build'), { recursive: true, force: true });
-    await rm(path.join(PYTHON_SDK_DIR, 'superdoc_sdk.egg-info'), { recursive: true, force: true });
-    try { await rm(path.join(PYTHON_SDK_DIR, 'setup.py'), { force: true }); } catch { /* noop */ }
-  });
+      // Clean build artifacts
+      await rm(path.join(PYTHON_SDK_DIR, 'dist'), { recursive: true, force: true });
+      await rm(path.join(PYTHON_SDK_DIR, 'build'), { recursive: true, force: true });
+      await rm(path.join(PYTHON_SDK_DIR, 'superdoc_sdk.egg-info'), { recursive: true, force: true });
+      try { await rm(path.join(PYTHON_SDK_DIR, 'setup.py'), { force: true }); } catch { /* noop */ }
+    });
+  } finally {
+    for (const target of PYTHON_EMBEDDED_TARGETS) {
+      await rm(path.join(PYTHON_VENDOR_CLI_DIR, target), { recursive: true, force: true });
+    }
+  }
 
   console.log(`\nSDK release${dryRun ? ' dry-run' : ''} complete.`);
 }

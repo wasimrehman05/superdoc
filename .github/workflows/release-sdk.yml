@@ -103,19 +103,52 @@ jobs:
       # ---------------------------------------------------------------
       # Python SDK
       # ---------------------------------------------------------------
+      - name: Build CLI platform artifacts (for Python SDK)
+        run: |
+          pnpm --prefix apps/cli run build:native:all
+          pnpm --prefix apps/cli run build:stage
+
       - name: Prepare Python SDK tools
         run: |
           rm -rf packages/sdk/langs/python/superdoc/tools
           cp -r packages/sdk/tools packages/sdk/langs/python/superdoc/tools
           rm -f packages/sdk/langs/python/superdoc/tools/__init__.py
 
+      - name: Stage Python embedded CLI binaries
+        run: node packages/sdk/scripts/stage-python-embedded-cli.mjs
+
       - name: Build Python SDK
-        run: |
-          mkdir -p superdoc/_vendor/cli
-          touch superdoc/_vendor/__init__.py
-          touch superdoc/_vendor/cli/__init__.py
-          python -m build
+        run: python -m build
         working-directory: packages/sdk/langs/python
+
+      - name: Verify embedded CLI binaries in Python wheel
+        run: |
+          python - <<'PY'
+          import glob
+          import zipfile
+
+          wheels = glob.glob("packages/sdk/langs/python/dist/*.whl")
+          if not wheels:
+            raise SystemExit("No wheel found in packages/sdk/langs/python/dist/")
+
+          wheel = wheels[0]
+          expected = [
+            "superdoc/_vendor/cli/darwin-arm64/superdoc",
+            "superdoc/_vendor/cli/darwin-x64/superdoc",
+            "superdoc/_vendor/cli/linux-x64/superdoc",
+            "superdoc/_vendor/cli/linux-arm64/superdoc",
+            "superdoc/_vendor/cli/windows-x64/superdoc.exe",
+          ]
+
+          with zipfile.ZipFile(wheel) as archive:
+            names = set(archive.namelist())
+
+          missing = [name for name in expected if name not in names]
+          if missing:
+            raise SystemExit(f"Wheel is missing embedded CLI binaries: {missing}")
+
+          print(f"Verified embedded CLI binaries in {wheel}")
+          PY
 
       - name: Publish Python SDK to PyPI
         if: ${{ !inputs.dry-run }}
