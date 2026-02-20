@@ -90,16 +90,15 @@ jobs:
 
       - name: Publish Node SDK
         if: ${{ !inputs.dry-run }}
-        run: pnpm --prefix packages/sdk/langs/node publish --access public --tag latest --no-git-checks
+        run: npm publish --access public --tag latest
+        working-directory: packages/sdk/langs/node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Node SDK (dry run)
         if: ${{ inputs.dry-run }}
-        run: |
-          echo "Would publish the following Node package:"
-          pnpm --prefix packages/sdk/langs/node pack
-          ls -la packages/sdk/langs/node/*.tgz
+        run: npm pack --dry-run
+        working-directory: packages/sdk/langs/node
 
       # ---------------------------------------------------------------
       # Python SDK
