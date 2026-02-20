@@ -111,7 +111,11 @@ jobs:
           rm -f packages/sdk/langs/python/superdoc/tools/__init__.py
 
       - name: Build Python SDK
-        run: python -m build
+        run: |
+          mkdir -p superdoc/_vendor/cli
+          touch superdoc/_vendor/__init__.py
+          touch superdoc/_vendor/cli/__init__.py
+          python -m build
         working-directory: packages/sdk/langs/python
 
       - name: Publish Python SDK to PyPI
