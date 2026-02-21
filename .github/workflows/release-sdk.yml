@@ -88,14 +88,12 @@ jobs:
       - name: Build Node SDK
         run: pnpm --prefix packages/sdk/langs/node run build
 
-      # TEMPORARY: Node publish disabled while Python companion publishing is being set up.
-      # Uncomment once PyPI OIDC is fully configured.
-      # - name: Publish Node SDK
-      #   if: ${{ !inputs.dry-run }}
-      #   run: npm publish --access public --tag latest
-      #   working-directory: packages/sdk/langs/node
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish Node SDK
+        if: ${{ !inputs.dry-run }}
+        run: npm publish --access public --tag latest
+        working-directory: packages/sdk/langs/node
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Node SDK (dry run)
         if: ${{ inputs.dry-run }}
@@ -154,22 +152,6 @@ jobs:
           /tmp/sdk-smoke/bin/python -c "from superdoc.embedded_cli import resolve_embedded_cli_path; import subprocess; p = resolve_embedded_cli_path(); r = subprocess.run([p, '--help'], capture_output=True, text=True, timeout=10); assert r.returncode == 0, f'CLI exited {r.returncode}: {r.stderr}'; print(f'CLI binary OK: {p}')"
           echo "Smoke test passed — marker resolution + binary execution work."
           rm -rf /tmp/sdk-smoke /tmp/sdk-wheelhouse
-
-      # TEMPORARY: Only publish companions with registered PyPI pending publishers.
-      # Remove this step once all 5 are registered, and uncomment the full publish below.
-      - name: Filter companion wheels to registered projects only
-        if: ${{ !inputs.dry-run }}
-        run: |
-          cd packages/sdk/langs/python/companion-dist
-          echo "Before filter:" && ls -la
-          shopt -s nullglob
-          for whl in *.whl; do
-            case "$whl" in
-              superdoc_sdk_cli_darwin_arm64-*|superdoc_sdk_cli_darwin_x64-*|superdoc_sdk_cli_linux_x64-*|superdoc_sdk_cli_linux_arm64-*) ;;
-              *) echo "Removing unregistered: $whl" && rm "$whl" ;;
-            esac
-          done
-          echo "After filter:" && ls -la
 
       # Publish companions first — root depends on them being on PyPI.
       - name: Publish companion Python packages to PyPI
