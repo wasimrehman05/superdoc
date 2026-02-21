@@ -92,7 +92,13 @@
           {
             "group": "Document API",
             "tag": "ALPHA",
-            "pages": ["document-api/overview"]
+            "pages": [
+              "document-api/overview",
+              {
+                "page": "document-engine/mcp",
+                "tag": "NEW"
+              }
+            ]
           },
           {
             "group": "Modules",
