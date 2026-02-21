@@ -165,7 +165,7 @@ jobs:
           shopt -s nullglob
           for whl in *.whl; do
             case "$whl" in
-              superdoc_sdk_cli_darwin_arm64-*|superdoc_sdk_cli_darwin_x64-*) ;;
+              superdoc_sdk_cli_darwin_arm64-*|superdoc_sdk_cli_darwin_x64-*|superdoc_sdk_cli_linux_x64-*) ;;
               *) echo "Removing unregistered: $whl" && rm "$whl" ;;
             esac
           done
