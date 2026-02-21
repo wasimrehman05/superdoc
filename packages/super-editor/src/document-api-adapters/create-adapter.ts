@@ -175,7 +175,10 @@ export function createParagraphAdapter(
     const trackedChangeRefs =
       mode === 'tracked' ? collectTrackInsertRefsInRange(editor, paragraph.pos, paragraph.end) : undefined;
 
-    return buildParagraphCreateSuccess(paragraph.nodeId, trackedChangeRefs);
+    // Always return the sdBlockId we assigned — it's deterministic and the
+    // index alias guarantees it stays resolvable even if paraId is later
+    // injected as the primary identity.
+    return buildParagraphCreateSuccess(paragraphId, trackedChangeRefs);
   } catch {
     // Mutation already applied — contract requires success: true.
     // Fall back to the generated ID we assigned to the command.
@@ -326,7 +329,7 @@ export function createHeadingAdapter(
     const trackedChangeRefs =
       mode === 'tracked' ? collectTrackInsertRefsInRange(editor, heading.pos, heading.end) : undefined;
 
-    return buildHeadingCreateSuccess(heading.nodeId, trackedChangeRefs);
+    return buildHeadingCreateSuccess(headingId, trackedChangeRefs);
   } catch {
     // Mutation already applied — contract requires success: true.
     // Fall back to the generated ID we assigned to the command.

@@ -254,13 +254,27 @@ describe('buildBlockIndex', () => {
   });
 
   describe('ID resolution — paragraph nodes', () => {
-    it('prefers paraId over sdBlockId when both are present', () => {
+    it('prefers paraId over sdBlockId as primary ID when both are present', () => {
       const index = indexFromNodes({
         typeName: 'paragraph',
         attrs: { sdBlockId: 'sd1', paraId: 'p1' },
         offset: 0,
       });
       expect(index.candidates[0].nodeId).toBe('p1');
+    });
+
+    it('registers sdBlockId as alias so lookups by either ID work', () => {
+      const index = indexFromNodes({
+        typeName: 'paragraph',
+        attrs: { sdBlockId: 'sd1', paraId: 'p1' },
+        offset: 0,
+      });
+      // Primary lookup by paraId
+      expect(index.byId.get('paragraph:p1')).toBeDefined();
+      // Alias lookup by sdBlockId
+      expect(index.byId.get('paragraph:sd1')).toBeDefined();
+      // Both point to the same candidate
+      expect(index.byId.get('paragraph:sd1')).toBe(index.byId.get('paragraph:p1'));
     });
 
     it('falls back to paraId when sdBlockId is absent', () => {

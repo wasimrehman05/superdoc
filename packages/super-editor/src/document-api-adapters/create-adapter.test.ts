@@ -335,7 +335,7 @@ describe('createParagraphAdapter', () => {
     ).toThrow('requires the insertTrackedChange command');
   });
 
-  it('resolves created paragraph when block index identity prefers paraId over sdBlockId', () => {
+  it('resolves created paragraph by sdBlockId even when paraId is also present', () => {
     const { editor } = makeEditor({
       insertedParagraphAttrs: {
         paraId: 'pm-para-id',
@@ -347,8 +347,10 @@ describe('createParagraphAdapter', () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.paragraph.nodeType).toBe('paragraph');
-    expect(result.paragraph.nodeId).toBe('pm-para-id');
-    expect(result.insertionPoint.blockId).toBe('pm-para-id');
+    // sdBlockId takes priority — the returned ID is always the one the create command assigned.
+    expect(result.paragraph.nodeId).not.toBe('pm-para-id');
+    expect(typeof result.paragraph.nodeId).toBe('string');
+    expect(result.insertionPoint.blockId).toBe(result.paragraph.nodeId);
   });
 
   it('returns success with generated ID when post-apply paragraph resolution fails', () => {
@@ -805,5 +807,75 @@ describe('createHeadingAdapter', () => {
     createHeadingAdapter(editor, { level: 3 }, { changeMode: 'direct' });
 
     expect(insertHeadingAt.mock.calls[0]?.[0]).toMatchObject({ level: 3 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BUG: Returned nodeId from create is not composable with getNodeById
+// ---------------------------------------------------------------------------
+// These tests expose a real bug: when a created paragraph later gains a paraId
+// (e.g. through DOCX import merge or round-trip), the ID returned by
+// create.paragraph can no longer be used with getNodeById — because the block
+// index resolves the node by paraId (higher priority) instead of sdBlockId.
+
+import { getNodeByIdAdapter } from './get-node-adapter.js';
+import { buildBlockIndex } from './helpers/node-address-resolver.js';
+import { clearIndexCache } from './helpers/index-cache.js';
+
+describe('BUG: create → getNodeById composability', () => {
+  it('returned nodeId from create.paragraph should be resolvable by getNodeById after paraId injection', () => {
+    // Step 1: Create a paragraph — sdBlockId is the only ID, so create returns it.
+    const { editor } = makeEditor();
+    const createResult = createParagraphAdapter(editor, { text: 'New content' }, { changeMode: 'direct' });
+
+    expect(createResult.success).toBe(true);
+    if (!createResult.success) return;
+
+    const returnedId = createResult.paragraph.nodeId;
+
+    // Step 2: Simulate the node gaining a paraId (as happens during DOCX round-trip
+    // or when a collaboration merge assigns OOXML identity).
+    // The node now has BOTH sdBlockId (the returned ID) and paraId (the import ID).
+    const doc = editor.state.doc as unknown as MockNode;
+    const createdNode = doc._children?.find(
+      (child) => (child.attrs as Record<string, unknown>)?.sdBlockId === returnedId,
+    );
+    expect(createdNode).toBeDefined();
+
+    // Inject a paraId onto the node attrs (simulating DOCX import merge)
+    (createdNode!.attrs as Record<string, unknown>).paraId = 'imported-para-id';
+
+    // Clear the index cache so it rebuilds from the mutated document.
+    // In a real scenario, a DOCX round-trip or collaboration merge produces
+    // a new document snapshot, which naturally invalidates the cache.
+    clearIndexCache(editor);
+
+    // Step 3: Try to resolve the node using the ID that create.paragraph returned.
+    // This SHOULD work — the ID we gave the consumer should always resolve.
+    // BUG: This FAILS because buildBlockIndex prefers paraId over sdBlockId,
+    // so the node's resolved ID is now 'imported-para-id', not the returned ID.
+    const result = getNodeByIdAdapter(editor, { nodeId: returnedId, nodeType: 'paragraph' });
+    expect(result.nodeType).toBe('paragraph');
+  });
+
+  it('returned insertionPoint.blockId from create.paragraph should be usable as a target', () => {
+    const { editor } = makeEditor();
+    const createResult = createParagraphAdapter(editor, { text: 'First' }, { changeMode: 'direct' });
+
+    expect(createResult.success).toBe(true);
+    if (!createResult.success) return;
+
+    const blockId = createResult.insertionPoint.blockId;
+
+    // Simulate paraId injection (same as above)
+    const doc = editor.state.doc as unknown as MockNode;
+    const createdNode = doc._children?.find((child) => (child.attrs as Record<string, unknown>)?.sdBlockId === blockId);
+    (createdNode!.attrs as Record<string, unknown>).paraId = 'ooxml-para-id';
+
+    // BUG: The block index now resolves this node as 'ooxml-para-id',
+    // so using blockId (the sdBlockId) as a target fails.
+    const index = buildBlockIndex(editor);
+    const match = index.byId.get(`paragraph:${blockId}`);
+    expect(match).toBeDefined();
   });
 });
