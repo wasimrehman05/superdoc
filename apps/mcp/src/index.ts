@@ -1,13 +1,17 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SessionManager } from './session-manager.js';
 import { registerAllTools } from './tools/index.js';
 
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
+
 const server = new McpServer(
   {
     name: 'superdoc',
-    version: '0.0.0',
+    version,
   },
   {
     instructions: [
