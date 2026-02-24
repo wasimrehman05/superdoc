@@ -90,10 +90,13 @@
             ]
           },
           {
-            "group": "Document API",
+            "group": "Document Engine",
             "tag": "ALPHA",
             "pages": [
+              "document-engine/overview",
               "document-api/overview",
+              "document-engine/sdks",
+              "document-engine/cli",
               {
                 "page": "document-engine/mcp",
                 "tag": "NEW"

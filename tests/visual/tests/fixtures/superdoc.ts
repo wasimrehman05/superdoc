@@ -12,7 +12,6 @@ interface HarnessConfig {
   toolbar?: 'none' | 'minimal' | 'full';
   comments?: 'off' | 'on' | 'panel' | 'readonly';
   trackChanges?: boolean;
-  extensions?: string[];
   hideCaret?: boolean;
   hideSelection?: boolean;
   width?: number;
@@ -25,7 +24,6 @@ function buildHarnessUrl(config: HarnessConfig = {}): string {
   if (config.toolbar) params.set('toolbar', config.toolbar);
   if (config.comments) params.set('comments', config.comments);
   if (config.trackChanges) params.set('trackChanges', '1');
-  if (config.extensions?.length) params.set('extensions', config.extensions.join(','));
   if (config.hideCaret !== undefined) params.set('hideCaret', config.hideCaret ? '1' : '0');
   if (config.hideSelection !== undefined) params.set('hideSelection', config.hideSelection ? '1' : '0');
   if (config.width) params.set('width', String(config.width));
@@ -79,6 +77,8 @@ export interface SuperDocFixture {
   setDocumentMode(mode: 'editing' | 'suggesting' | 'viewing'): Promise<void>;
   /** Set cursor/selection position via ProseMirror positions */
   setTextSelection(from: number, to?: number): Promise<void>;
+  /** Find the first occurrence of a text string in the document and return its ProseMirror position range. */
+  findTextRange(text: string): Promise<{ from: number; to: number }>;
   /** Single click on a line by index */
   clickOnLine(lineIndex: number, xOffset?: number): Promise<void>;
   /** Click on a comment highlight containing the given text */
@@ -198,6 +198,30 @@ export const test = base.extend<{ superdoc: SuperDocFixture } & SuperDocOptions>
           },
           { f: from, t: to },
         );
+      },
+
+      async findTextRange(text: string): Promise<{ from: number; to: number }> {
+        return page.evaluate((needle) => {
+          const editor = (window as any).editor;
+          let found: { from: number; to: number } | null = null;
+
+          editor.state.doc.descendants((node: any, pos: number) => {
+            if (found) return false;
+            if (!node.isText || !node.text) return true;
+
+            const index = node.text.indexOf(needle);
+            if (index === -1) return true;
+
+            found = { from: pos + index, to: pos + index + needle.length };
+            return false;
+          });
+
+          if (!found) {
+            throw new Error(`Text not found: ${needle}`);
+          }
+
+          return found;
+        }, text);
       },
 
       async clickOnLine(lineIndex: number, xOffset = 10) {

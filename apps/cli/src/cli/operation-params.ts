@@ -24,7 +24,6 @@ import type {
 } from './types';
 import {
   CLI_DOC_OPERATIONS,
-  CLI_ONLY_OPERATIONS,
   CLI_OPERATION_IDS,
   type CliOperationId,
   type CliOnlyOperation,
@@ -38,21 +37,29 @@ import { CLI_OPERATION_COMMAND_KEYS } from './commands';
 
 const DOC_PARAM: CliOperationParamSpec = { name: 'doc', kind: 'doc', type: 'string' };
 const SESSION_PARAM: CliOperationParamSpec = { name: 'sessionId', kind: 'flag', flag: 'session', type: 'string' };
-const OUT_PARAM: CliOperationParamSpec = { name: 'out', kind: 'flag', type: 'string' };
+const OUT_PARAM: CliOperationParamSpec = { name: 'out', kind: 'flag', type: 'string', agentVisible: false };
 const FORCE_PARAM: CliOperationParamSpec = { name: 'force', kind: 'flag', type: 'boolean' };
-const DRY_RUN_PARAM: CliOperationParamSpec = { name: 'dryRun', kind: 'flag', flag: 'dry-run', type: 'boolean' };
+const DRY_RUN_PARAM: CliOperationParamSpec = {
+  name: 'dryRun',
+  kind: 'flag',
+  flag: 'dry-run',
+  type: 'boolean',
+  agentVisible: false,
+};
 const CHANGE_MODE_PARAM: CliOperationParamSpec = {
   name: 'changeMode',
   kind: 'flag',
   flag: 'change-mode',
   type: 'string',
   schema: { oneOf: [{ const: 'direct' }, { const: 'tracked' }] } as CliTypeSpec,
+  agentVisible: false,
 };
 const EXPECTED_REVISION_PARAM: CliOperationParamSpec = {
   name: 'expectedRevision',
   kind: 'flag',
   flag: 'expected-revision',
   type: 'number',
+  agentVisible: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -289,6 +296,7 @@ const EXTRA_CLI_PARAMS: Partial<Record<string, CliOperationParamSpec[]>> = {
     { name: 'pattern', kind: 'flag', type: 'string' },
     { name: 'mode', kind: 'flag', type: 'string' },
     { name: 'caseSensitive', kind: 'flag', flag: 'case-sensitive', type: 'boolean' },
+    { name: 'select', kind: 'jsonFlag', flag: 'select-json', type: 'json' },
     { name: 'query', kind: 'jsonFlag', flag: 'query-json', type: 'json' },
   ],
   'doc.lists.list': [{ name: 'query', kind: 'jsonFlag', flag: 'query-json', type: 'json' }],
@@ -304,6 +312,7 @@ const EXTRA_CLI_PARAMS: Partial<Record<string, CliOperationParamSpec[]>> = {
   'doc.lists.restart': [{ name: 'input', kind: 'jsonFlag', flag: 'input-json', type: 'json' }],
   'doc.lists.exit': [{ name: 'input', kind: 'jsonFlag', flag: 'input-json', type: 'json' }],
   'doc.create.paragraph': [{ name: 'input', kind: 'jsonFlag', flag: 'input-json', type: 'json' }],
+  'doc.create.heading': [{ name: 'input', kind: 'jsonFlag', flag: 'input-json', type: 'json' }],
 };
 
 // ---------------------------------------------------------------------------

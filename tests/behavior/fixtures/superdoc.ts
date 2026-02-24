@@ -555,30 +555,42 @@ function createFixture(page: Page, editor: Locator, modKey: string) {
         .toBe('ok');
     },
 
-    async assertCommentHighlightExists(opts?: { text?: string; commentId?: string }) {
-      const highlights = page.locator('.superdoc-comment-highlight');
-      await expect(highlights.first()).toBeAttached();
-
-      if (opts?.text) {
-        await expect(highlights.filter({ hasText: opts.text }).first()).toBeAttached();
-      }
-      if (opts?.commentId) {
-        const commentId = opts.commentId;
-        await expect
-          .poll(() =>
+    async assertCommentHighlightExists(opts?: { text?: string; commentId?: string; timeoutMs?: number }) {
+      const expectedText = opts?.text;
+      const expectedCommentId = opts?.commentId;
+      const timeoutMs = opts?.timeoutMs ?? 15_000;
+      await expect
+        .poll(
+          () =>
             page.evaluate(
-              (id) =>
-                Array.from(document.querySelectorAll('.superdoc-comment-highlight')).some((el) =>
-                  (el.getAttribute('data-comment-ids') ?? '')
-                    .split(/[\s,]+/)
-                    .filter(Boolean)
-                    .includes(id),
-                ),
-              commentId,
+              ({ text, commentId }) => {
+                const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
+                const highlights = Array.from(document.querySelectorAll('.superdoc-comment-highlight'));
+                if (highlights.length === 0) return false;
+
+                if (text) {
+                  const expected = normalize(text);
+                  const hasTextMatch = highlights.some((el) => normalize(el.textContent ?? '').includes(expected));
+                  if (!hasTextMatch) return false;
+                }
+
+                if (commentId) {
+                  const hasCommentId = highlights.some((el) =>
+                    (el.getAttribute('data-comment-ids') ?? '')
+                      .split(/[\s,]+/)
+                      .filter(Boolean)
+                      .includes(commentId),
+                  );
+                  if (!hasCommentId) return false;
+                }
+
+                return true;
+              },
+              { text: expectedText, commentId: expectedCommentId },
             ),
-          )
-          .toBe(true);
-      }
+          { timeout: timeoutMs },
+        )
+        .toBe(true);
     },
 
     async assertTrackedChangeExists(type: 'insert' | 'delete' | 'format') {
