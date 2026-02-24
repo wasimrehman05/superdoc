@@ -12,6 +12,7 @@
     "test:all": "vitest run",
     "test:editor": "vitest run --root ./packages/super-editor",
     "test:superdoc": "vitest run --root ./packages/superdoc",
+    "test:doc-api-stories": "pnpm --filter @superdoc-testing/doc-api-stories test",
     "test:cov": "node scripts/test-cov.mjs",
     "test:behavior": "pnpm --filter @superdoc-testing/behavior test",
     "test:behavior:trace": "pnpm --filter @superdoc-testing/behavior test:trace",
