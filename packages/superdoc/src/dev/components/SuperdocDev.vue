@@ -830,7 +830,7 @@ const sidebarOptions = [
     component: SidebarLayout,
   },
 ];
-const activeSidebarId = ref('layout');
+const activeSidebarId = ref('off');
 const activeSidebar = computed(
   () => sidebarOptions.find((option) => option.id === activeSidebarId.value) ?? sidebarOptions[0],
 );
