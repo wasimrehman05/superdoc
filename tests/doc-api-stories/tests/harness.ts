@@ -26,9 +26,19 @@ export interface StoryContext {
   outPath(name: string): string;
 }
 
-export function useStoryHarness(storyName: string): StoryContext {
+export interface StoryHarnessOptions {
+  /**
+   * Keep prior test outputs in the story results directory.
+   * When true, the directory is cleaned once (first test setup) instead of before every test.
+   */
+  preserveResults?: boolean;
+}
+
+export function useStoryHarness(storyName: string, options: StoryHarnessOptions = {}): StoryContext {
   const sessionIds: string[] = [];
   let ctx: StoryContext | null = null;
+  let hasPreparedResultsDir = false;
+  const preserveResults = options.preserveResults ?? false;
 
   const original = {
     open: undefined as any,
@@ -36,7 +46,10 @@ export function useStoryHarness(storyName: string): StoryContext {
 
   beforeEach(async () => {
     const resultsDir = path.join(STORIES_ROOT, 'results', storyName);
-    await rm(resultsDir, { recursive: true, force: true });
+    if (!preserveResults || !hasPreparedResultsDir) {
+      await rm(resultsDir, { recursive: true, force: true });
+      hasPreparedResultsDir = true;
+    }
     await mkdir(resultsDir, { recursive: true });
 
     const cliBin = await access(CLI_DIST_BIN).then(

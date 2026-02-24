@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     name: 'doc-api-stories',
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'tests/ex*.ts'],
-    exclude: ['**/*.d.ts'],
+    include: ['tests/**/*.ts'],
+    exclude: ['**/*.d.ts', 'tests/harness.ts', 'tests/**/harness.ts'],
   },
 });
