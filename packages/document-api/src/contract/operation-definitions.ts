@@ -39,7 +39,6 @@ export type ReferenceGroupKey =
   | 'lists'
   | 'comments'
   | 'trackChanges'
-  | 'review'
   | 'query'
   | 'mutations';
 
@@ -240,7 +239,7 @@ export const OPERATION_DEFINITIONS = {
   'format.apply': {
     memberPath: 'format.apply',
     description:
-      'Apply explicit mark changes (bold, italic, underline, strike) to the target range using boolean patch semantics.',
+      'Apply explicit inline style changes (bold, italic, underline, strike) to the target range using boolean patch semantics.',
     requiresDocumentContext: true,
     metadata: mutationOperation({
       idempotency: 'conditional',
@@ -474,8 +473,8 @@ export const OPERATION_DEFINITIONS = {
     referenceDocPath: 'track-changes/get.mdx',
     referenceGroup: 'trackChanges',
   },
-  'review.decide': {
-    memberPath: 'review.decide',
+  'trackChanges.decide': {
+    memberPath: 'trackChanges.decide',
     description: 'Accept or reject a tracked change (by ID or scope: all).',
     requiresDocumentContext: true,
     metadata: mutationOperation({
@@ -485,8 +484,8 @@ export const OPERATION_DEFINITIONS = {
       possibleFailureCodes: ['NO_OP'],
       throws: T_NOT_FOUND_COMMAND,
     }),
-    referenceDocPath: 'review/decide.mdx',
-    referenceGroup: 'review',
+    referenceDocPath: 'track-changes/decide.mdx',
+    referenceGroup: 'trackChanges',
   },
 
   'query.match': {

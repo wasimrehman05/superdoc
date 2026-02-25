@@ -197,7 +197,7 @@ export function buildAgentArtifacts(): GeneratedFile[] {
       {
         id: 'track-change-review',
         title: 'Track-change review workflow',
-        operations: ['trackChanges.list', 'review.decide'],
+        operations: ['trackChanges.list', 'trackChanges.decide'],
       },
     ],
   };

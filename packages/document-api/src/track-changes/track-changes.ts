@@ -20,7 +20,7 @@ export type TrackChangesAcceptAllInput = Record<string, never>;
 export type TrackChangesRejectAllInput = Record<string, never>;
 
 // ---------------------------------------------------------------------------
-// review.decide — canonical consolidated review operation (Phase 4 Wave 1)
+// trackChanges.decide — consolidated accept/reject operation
 // ---------------------------------------------------------------------------
 
 export type ReviewDecideInput =
@@ -44,10 +44,11 @@ export interface TrackChangesAdapter {
   rejectAll(input: TrackChangesRejectAllInput, options?: RevisionGuardOptions): Receipt;
 }
 
-/** Public read-only surface for trackChanges on DocumentApi. Mutations go through review.decide. */
+/** Public surface for trackChanges on DocumentApi. */
 export interface TrackChangesApi {
   list(input?: TrackChangesListInput): TrackChangesListResult;
   get(input: TrackChangesGetInput): TrackChangeInfo;
+  decide(input: ReviewDecideInput, options?: RevisionGuardOptions): Receipt;
 }
 
 /**
@@ -100,10 +101,10 @@ export function executeTrackChangesRejectAll(
 }
 
 /**
- * Executes the consolidated `review.decide` operation by routing to the
+ * Executes the consolidated `trackChanges.decide` operation by routing to the
  * appropriate adapter method based on the discriminated input.
  */
-export function executeReviewDecide(
+export function executeTrackChangesDecide(
   adapter: TrackChangesAdapter,
   input: ReviewDecideInput,
   options?: RevisionGuardOptions,

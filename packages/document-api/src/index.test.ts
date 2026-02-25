@@ -493,7 +493,7 @@ describe('createDocumentApi', () => {
     );
   });
 
-  it('delegates format.bold to adapter.apply with marks.bold', () => {
+  it('delegates format.bold to adapter.apply with inline.bold', () => {
     const formatAdpt = makeFormatAdapter();
     const api = createDocumentApi({
       find: makeFindAdapter(QUERY_RESULT),
@@ -511,12 +511,12 @@ describe('createDocumentApi', () => {
     const target = { kind: 'text', blockId: 'p1', range: { start: 0, end: 2 } } as const;
     api.format.bold({ target }, { changeMode: 'tracked' });
     expect(formatAdpt.apply).toHaveBeenCalledWith(
-      { target, marks: { bold: true } },
+      { target, inline: { bold: true } },
       { changeMode: 'tracked', dryRun: false },
     );
   });
 
-  it('delegates format.italic to adapter.apply with marks.italic', () => {
+  it('delegates format.italic to adapter.apply with inline.italic', () => {
     const formatAdpt = makeFormatAdapter();
     const api = createDocumentApi({
       find: makeFindAdapter(QUERY_RESULT),
@@ -534,12 +534,12 @@ describe('createDocumentApi', () => {
     const target = { kind: 'text', blockId: 'p1', range: { start: 0, end: 2 } } as const;
     api.format.italic({ target }, { changeMode: 'direct' });
     expect(formatAdpt.apply).toHaveBeenCalledWith(
-      { target, marks: { italic: true } },
+      { target, inline: { italic: true } },
       { changeMode: 'direct', dryRun: false },
     );
   });
 
-  it('delegates format.underline to adapter.apply with marks.underline', () => {
+  it('delegates format.underline to adapter.apply with inline.underline', () => {
     const formatAdpt = makeFormatAdapter();
     const api = createDocumentApi({
       find: makeFindAdapter(QUERY_RESULT),
@@ -557,12 +557,12 @@ describe('createDocumentApi', () => {
     const target = { kind: 'text', blockId: 'p1', range: { start: 0, end: 2 } } as const;
     api.format.underline({ target }, { changeMode: 'direct' });
     expect(formatAdpt.apply).toHaveBeenCalledWith(
-      { target, marks: { underline: true } },
+      { target, inline: { underline: true } },
       { changeMode: 'direct', dryRun: false },
     );
   });
 
-  it('delegates format.strikethrough to adapter.apply with marks.strike', () => {
+  it('delegates format.strikethrough to adapter.apply with inline.strike', () => {
     const formatAdpt = makeFormatAdapter();
     const api = createDocumentApi({
       find: makeFindAdapter(QUERY_RESULT),
@@ -580,7 +580,7 @@ describe('createDocumentApi', () => {
     const target = { kind: 'text', blockId: 'p1', range: { start: 0, end: 2 } } as const;
     api.format.strikethrough({ target }, { changeMode: 'tracked' });
     expect(formatAdpt.apply).toHaveBeenCalledWith(
-      { target, marks: { strike: true } },
+      { target, inline: { strike: true } },
       { changeMode: 'tracked', dryRun: false },
     );
   });
@@ -609,7 +609,7 @@ describe('createDocumentApi', () => {
     expect(trackAdpt.get).toHaveBeenCalledWith({ id: 'tc-1' });
   });
 
-  it('delegates review.decide to trackChanges adapter methods', () => {
+  it('delegates trackChanges.decide to trackChanges adapter methods', () => {
     const trackAdpt = makeTrackChangesAdapter();
     const api = createDocumentApi({
       find: makeFindAdapter(QUERY_RESULT),
@@ -624,10 +624,10 @@ describe('createDocumentApi', () => {
       lists: makeListsAdapter(),
     });
 
-    const acceptResult = api.review.decide({ decision: 'accept', target: { id: 'tc-1' } });
-    const rejectResult = api.review.decide({ decision: 'reject', target: { id: 'tc-1' } });
-    const acceptAllResult = api.review.decide({ decision: 'accept', target: { scope: 'all' } });
-    const rejectAllResult = api.review.decide({ decision: 'reject', target: { scope: 'all' } });
+    const acceptResult = api.trackChanges.decide({ decision: 'accept', target: { id: 'tc-1' } });
+    const rejectResult = api.trackChanges.decide({ decision: 'reject', target: { id: 'tc-1' } });
+    const acceptAllResult = api.trackChanges.decide({ decision: 'accept', target: { scope: 'all' } });
+    const rejectAllResult = api.trackChanges.decide({ decision: 'reject', target: { scope: 'all' } });
 
     expect(acceptResult.success).toBe(true);
     expect(rejectResult.success).toBe(true);
@@ -1277,7 +1277,7 @@ describe('createDocumentApi', () => {
 
         it('rejects null input', () => {
           const api = makeApi();
-          // null spreads to {}, so the merged object { marks: {...} } passes shape
+          // null spreads to {}, so the merged object { inline: {...} } passes shape
           // checks but fails the locator requirement
           expectValidationError(() => api.format[method](null as any), 'requires a target');
         });
@@ -1300,7 +1300,7 @@ describe('createDocumentApi', () => {
 
     // -- Canonical payload parity --
 
-    it('passes canonical target through to adapter.apply with marks', () => {
+    it('passes canonical target through to adapter.apply with inline', () => {
       const formatAdpt = makeFormatAdapter();
       const api = createDocumentApi({
         find: makeFindAdapter(QUERY_RESULT),
@@ -1319,7 +1319,7 @@ describe('createDocumentApi', () => {
       const target = { kind: 'text', blockId: 'p1', range: { start: 0, end: 2 } } as const;
       api.format.bold({ target });
       expect(formatAdpt.apply).toHaveBeenCalledWith(
-        { target, marks: { bold: true } },
+        { target, inline: { bold: true } },
         { changeMode: 'direct', dryRun: false },
       );
     });
