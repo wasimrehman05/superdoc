@@ -19,6 +19,8 @@
  * 13. Node npm pack includes required tools/*.json assets
  * 14. SDK release scripts test suite passes
  * 15. SDK test suite passes (contract-integrity + cross-lang parity)
+ * 16. Node SDK platform package manifests exist and are well-formed
+ * 17. Node SDK optionalDependencies reference all expected platform packages
  */
 
 import { execFile } from 'node:child_process';
@@ -287,6 +289,44 @@ async function main() {
   // 15. Run SDK codegen test suite (contract-integrity + cross-lang parity)
   await check('SDK test suite passes (bun test)', async () => {
     await run('bun', ['test', path.join(REPO_ROOT, 'packages/sdk/codegen/src/__tests__/')]);
+  });
+
+  // 16. Node SDK platform package manifests exist and are well-formed
+  const EXPECTED_NODE_PLATFORMS = [
+    { name: '@superdoc-dev/sdk-darwin-arm64', dir: 'sdk-darwin-arm64', os: 'darwin', cpu: 'arm64' },
+    { name: '@superdoc-dev/sdk-darwin-x64', dir: 'sdk-darwin-x64', os: 'darwin', cpu: 'x64' },
+    { name: '@superdoc-dev/sdk-linux-x64', dir: 'sdk-linux-x64', os: 'linux', cpu: 'x64' },
+    { name: '@superdoc-dev/sdk-linux-arm64', dir: 'sdk-linux-arm64', os: 'linux', cpu: 'arm64' },
+    { name: '@superdoc-dev/sdk-windows-x64', dir: 'sdk-windows-x64', os: 'win32', cpu: 'x64' },
+  ];
+
+  await check('Node SDK platform package manifests exist and are well-formed', async () => {
+    for (const platform of EXPECTED_NODE_PLATFORMS) {
+      const pkgPath = path.join(REPO_ROOT, 'packages/sdk/langs/node/platforms', platform.dir, 'package.json');
+      const pkg = await readJson(pkgPath);
+      if (pkg.name !== platform.name) {
+        throw new Error(`${platform.dir}: expected name "${platform.name}", got "${pkg.name}"`);
+      }
+      if (!pkg.os?.includes(platform.os)) {
+        throw new Error(`${platform.dir}: missing os constraint "${platform.os}"`);
+      }
+      if (!pkg.cpu?.includes(platform.cpu)) {
+        throw new Error(`${platform.dir}: missing cpu constraint "${platform.cpu}"`);
+      }
+      if (!pkg.bin) {
+        throw new Error(`${platform.dir}: missing bin entry`);
+      }
+    }
+  });
+
+  // 17. Node SDK optionalDependencies reference all expected platform packages
+  await check('Node SDK optionalDependencies reference all platform packages', async () => {
+    const nodePkg = await readJson(path.join(REPO_ROOT, 'packages/sdk/langs/node/package.json'));
+    const optDeps = nodePkg.optionalDependencies ?? {};
+    const missing = EXPECTED_NODE_PLATFORMS.filter((p) => !(p.name in optDeps));
+    if (missing.length > 0) {
+      throw new Error(`Node SDK missing optionalDependencies: ${missing.map((p) => p.name).join(', ')}`);
+    }
   });
 
   console.log(`\n${passes} passed, ${failures} failed`);

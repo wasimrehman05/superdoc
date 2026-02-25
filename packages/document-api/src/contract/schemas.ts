@@ -157,10 +157,32 @@ function possibleFailureCodes(operationId: OperationId): string[] {
   return [...COMMAND_CATALOG[operationId].possibleFailureCodes];
 }
 
+function preApplyThrowCodes(operationId: OperationId): string[] {
+  return [...COMMAND_CATALOG[operationId].throws.preApply];
+}
+
 function receiptFailureSchemaFor(operationId: OperationId): JsonSchema {
   const codes = possibleFailureCodes(operationId);
   if (codes.length === 0) {
     throw new Error(`Operation "${operationId}" does not declare non-applied failure codes.`);
+  }
+
+  return objectSchema(
+    {
+      code: {
+        enum: codes,
+      },
+      message: { type: 'string' },
+      details: {},
+    },
+    ['code', 'message'],
+  );
+}
+
+function preApplyFailureSchemaFor(operationId: OperationId): JsonSchema {
+  const codes = preApplyThrowCodes(operationId);
+  if (codes.length === 0) {
+    throw new Error(`Operation "${operationId}" does not declare pre-apply throw codes.`);
   }
 
   return objectSchema(
@@ -190,6 +212,16 @@ function receiptFailureResultSchemaFor(operationId: OperationId): JsonSchema {
     {
       success: { const: false },
       failure: receiptFailureSchemaFor(operationId),
+    },
+    ['success', 'failure'],
+  );
+}
+
+function preApplyFailureResultSchemaFor(operationId: OperationId): JsonSchema {
+  return objectSchema(
+    {
+      success: { const: false },
+      failure: preApplyFailureSchemaFor(operationId),
     },
     ['success', 'failure'],
   );
@@ -1186,6 +1218,10 @@ const operationSchemas: Record<OperationId, OperationSchemaSet> = {
       },
       ['success', 'revision', 'steps', 'timing'],
     ),
+    // `mutations.apply` throws pre-apply plan-engine errors rather than returning
+    // receipt-style non-applied failures, but SDK contract consumers still require
+    // an explicit failure schema descriptor for mutation operations.
+    failure: preApplyFailureResultSchemaFor('mutations.apply'),
   },
   'capabilities.get': {
     input: strictEmptyObjectSchema,

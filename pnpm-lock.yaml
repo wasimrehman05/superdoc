@@ -30,6 +30,9 @@ catalogs:
     '@semantic-release/changelog':
       specifier: ^6.0.3
       version: 6.0.3
+    '@semantic-release/exec':
+      specifier: ^6.0.3
+      version: 6.0.3
     '@semantic-release/git':
       specifier: ^10.0.1
       version: 10.0.1
@@ -310,6 +313,9 @@ importers:
         specifier: 'catalog:'
         version: 9.39.2
       '@semantic-release/changelog':
+        specifier: 'catalog:'
+        version: 6.0.3(semantic-release@24.2.9(typescript@5.9.3))
+      '@semantic-release/exec':
         specifier: 'catalog:'
         version: 6.0.3(semantic-release@24.2.9(typescript@5.9.3))
       '@semantic-release/git':
@@ -983,6 +989,16 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+
+  packages/sdk/langs/node/platforms/sdk-darwin-arm64: {}
+
+  packages/sdk/langs/node/platforms/sdk-darwin-x64: {}
+
+  packages/sdk/langs/node/platforms/sdk-linux-arm64: {}
+
+  packages/sdk/langs/node/platforms/sdk-linux-x64: {}
+
+  packages/sdk/langs/node/platforms/sdk-windows-x64: {}
 
   packages/super-editor:
     dependencies:

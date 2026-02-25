@@ -1,4 +1,7 @@
-name: "\U0001F4E6 Release SDK"
+# MANUAL FALLBACK — normal SDK releases are handled by release-cli-sdk.yml.
+# Use this workflow only for emergency manual releases or when the orchestrated
+# workflow has issues. See release-cli-sdk.yml for the automated flow.
+name: "\U0001F4E6 Release SDK (manual fallback)"
 
 on:
   workflow_dispatch:

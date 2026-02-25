@@ -67,6 +67,7 @@ const EXPECTED_REVISION_PARAM: CliOperationParamSpec = {
 // ---------------------------------------------------------------------------
 
 type JsonSchema = Record<string, unknown>;
+const AGENT_HIDDEN_PARAM_NAMES = new Set(['out', 'expectedRevision', 'changeMode', 'dryRun']);
 
 function schemaToParamType(schema: JsonSchema): CliOperationParamSpec['type'] {
   if (schema.type === 'string') return 'string';
@@ -153,6 +154,10 @@ function deriveParamsFromInputSchema(inputSchema: JsonSchema): {
       type: paramType,
       required: required.has(name),
     };
+
+    if (AGENT_HIDDEN_PARAM_NAMES.has(name)) {
+      param.agentVisible = false;
+    }
 
     if (isComplex || (!isSimpleType(propSchema) && paramType !== 'json')) {
       param.schema = jsonSchemaToTypeSpec(propSchema);

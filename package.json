@@ -85,6 +85,7 @@
     "@commitlint/config-conventional": "catalog:",
     "@eslint/js": "catalog:",
     "@semantic-release/changelog": "catalog:",
+    "@semantic-release/exec": "catalog:",
     "@semantic-release/git": "catalog:",
     "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",

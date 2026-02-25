@@ -183,3 +183,49 @@ description: Generated reference for mutations.apply
   "type": "object"
 }
 ```
+
+## Failure schema
+
+```json
+{
+  "additionalProperties": false,
+  "properties": {
+    "failure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "enum": [
+            "REVISION_MISMATCH",
+            "MATCH_NOT_FOUND",
+            "AMBIGUOUS_MATCH",
+            "STYLE_CONFLICT",
+            "PRECONDITION_FAILED",
+            "INVALID_INPUT",
+            "CROSS_BLOCK_MATCH",
+            "PLAN_CONFLICT_OVERLAP",
+            "INVALID_STEP_COMBINATION",
+            "CAPABILITY_UNAVAILABLE"
+          ]
+        },
+        "details": {},
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "success": {
+      "const": false
+    }
+  },
+  "required": [
+    "success",
+    "failure"
+  ],
+  "type": "object"
+}
+```
