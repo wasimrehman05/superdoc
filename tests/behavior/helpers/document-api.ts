@@ -49,7 +49,13 @@ export async function findTextContexts(
       const result = (window as any).editor.doc.find({
         select: { type: 'text', pattern: searchPattern, mode: searchMode, caseSensitive },
       });
-      return result?.context ?? [];
+
+      const discoveryItems = Array.isArray(result?.items) ? result.items : [];
+      if (discoveryItems.length > 0) {
+        return discoveryItems.map((item: any) => item?.context).filter(Boolean);
+      }
+
+      return Array.isArray(result?.context) ? result.context : [];
     },
     {
       searchPattern: pattern,
@@ -106,7 +112,12 @@ export async function addCommentByText(
         caseSensitive: payload.caseSensitive ?? true,
       },
     });
-    const target = found?.context?.[payload.occurrence ?? 0]?.textRanges?.[0];
+    const discoveryItems = Array.isArray(found?.items) ? found.items : [];
+    const context =
+      discoveryItems.length > 0
+        ? discoveryItems[payload.occurrence ?? 0]?.context
+        : found?.context?.[payload.occurrence ?? 0];
+    const target = context?.textRanges?.[0];
     if (!target) throw new Error(`No text range found for pattern "${payload.pattern}".`);
     const receipt = docApi.comments.create({ target, text: payload.text }) as ReceiptLike | undefined;
     if (!receipt || receipt.success !== true) {
@@ -144,7 +155,20 @@ export async function listComments(
   page: Page,
   query: { includeResolved?: boolean } = { includeResolved: true },
 ): Promise<CommentsListResult> {
-  return page.evaluate((input) => (window as any).editor.doc.comments.list(input), query);
+  return page.evaluate((input) => {
+    const result = (window as any).editor.doc.comments.list(input);
+    if (Array.isArray(result?.matches)) {
+      return result;
+    }
+
+    const discoveryItems = Array.isArray(result?.items) ? result.items : [];
+    const matches = discoveryItems.map((item: any) => ({
+      ...item,
+      commentId: item?.commentId ?? item?.id ?? item?.address?.entityId,
+    }));
+
+    return { ...result, matches };
+  }, query) as Promise<CommentsListResult>;
 }
 
 export async function insertText(
@@ -184,7 +208,20 @@ export async function listTrackChanges(
   page: Page,
   query: { limit?: number; offset?: number; type?: TrackChangeType } = {},
 ): Promise<TrackChangesListResult> {
-  return page.evaluate((input) => (window as any).editor.doc.trackChanges.list(input), query);
+  return page.evaluate((input) => {
+    const result = (window as any).editor.doc.trackChanges.list(input);
+    if (Array.isArray(result?.changes)) {
+      return result;
+    }
+
+    const discoveryItems = Array.isArray(result?.items) ? result.items : [];
+    const changes = discoveryItems.map((item: any) => ({
+      ...item,
+      id: item?.id ?? item?.address?.entityId,
+    }));
+
+    return { ...result, changes };
+  }, query) as Promise<TrackChangesListResult>;
 }
 
 export async function listItems(page: Page): Promise<ListsListResult> {
@@ -192,23 +229,85 @@ export async function listItems(page: Page): Promise<ListsListResult> {
 }
 
 export async function acceptTrackChange(page: Page, input: { id: string }): Promise<void> {
-  await page.evaluate(
-    (payload) => (window as any).editor.doc.review.decide({ decision: 'accept', target: { id: payload.id } }),
-    input,
-  );
+  await page.evaluate((payload) => {
+    const docApi = (window as any).editor.doc;
+    if (typeof docApi.review?.decide === 'function') {
+      docApi.review.decide({ decision: 'accept', target: { id: payload.id } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.decide === 'function') {
+      docApi.trackChanges.decide({ decision: 'accept', target: { id: payload.id } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.accept === 'function') {
+      docApi.trackChanges.accept({ id: payload.id });
+      return;
+    }
+    throw new Error(
+      'Document API is unavailable: expected review.decide(), trackChanges.decide(), or trackChanges.accept().',
+    );
+  }, input);
 }
 
 export async function rejectTrackChange(page: Page, input: { id: string }): Promise<void> {
-  await page.evaluate(
-    (payload) => (window as any).editor.doc.review.decide({ decision: 'reject', target: { id: payload.id } }),
-    input,
-  );
+  await page.evaluate((payload) => {
+    const docApi = (window as any).editor.doc;
+    if (typeof docApi.review?.decide === 'function') {
+      docApi.review.decide({ decision: 'reject', target: { id: payload.id } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.decide === 'function') {
+      docApi.trackChanges.decide({ decision: 'reject', target: { id: payload.id } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.reject === 'function') {
+      docApi.trackChanges.reject({ id: payload.id });
+      return;
+    }
+    throw new Error(
+      'Document API is unavailable: expected review.decide(), trackChanges.decide(), or trackChanges.reject().',
+    );
+  }, input);
 }
 
 export async function acceptAllTrackChanges(page: Page): Promise<void> {
-  await page.evaluate(() => (window as any).editor.doc.review.decide({ decision: 'accept', target: { scope: 'all' } }));
+  await page.evaluate(() => {
+    const docApi = (window as any).editor.doc;
+    if (typeof docApi.review?.decide === 'function') {
+      docApi.review.decide({ decision: 'accept', target: { scope: 'all' } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.decide === 'function') {
+      docApi.trackChanges.decide({ decision: 'accept', target: { scope: 'all' } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.acceptAll === 'function') {
+      docApi.trackChanges.acceptAll({});
+      return;
+    }
+    throw new Error(
+      'Document API is unavailable: expected review.decide(), trackChanges.decide(), or trackChanges.acceptAll().',
+    );
+  });
 }
 
 export async function rejectAllTrackChanges(page: Page): Promise<void> {
-  await page.evaluate(() => (window as any).editor.doc.review.decide({ decision: 'reject', target: { scope: 'all' } }));
+  await page.evaluate(() => {
+    const docApi = (window as any).editor.doc;
+    if (typeof docApi.review?.decide === 'function') {
+      docApi.review.decide({ decision: 'reject', target: { scope: 'all' } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.decide === 'function') {
+      docApi.trackChanges.decide({ decision: 'reject', target: { scope: 'all' } });
+      return;
+    }
+    if (typeof docApi.trackChanges?.rejectAll === 'function') {
+      docApi.trackChanges.rejectAll({});
+      return;
+    }
+    throw new Error(
+      'Document API is unavailable: expected review.decide(), trackChanges.decide(), or trackChanges.rejectAll().',
+    );
+  });
 }
