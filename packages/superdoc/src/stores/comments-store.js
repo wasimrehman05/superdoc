@@ -29,6 +29,7 @@ export const useCommentsStore = defineStore('comments', () => {
 
   const isDebugging = false;
   const debounceTimers = {};
+  let hasReceivedPositions = false;
 
   const COMMENT_EVENTS = comments_module_events;
   const hasInitializedComments = ref(false);
@@ -847,9 +848,14 @@ export const useCommentsStore = defineStore('comments', () => {
    * @returns {void}
    */
   const handleEditorLocationsUpdate = (allCommentPositions) => {
-    if ((!allCommentPositions || Object.keys(allCommentPositions).length === 0) && commentsList.value.length > 0) {
+    const isEmpty = !allCommentPositions || Object.keys(allCommentPositions).length === 0;
+    // Guard only during initial load (before any real positions arrive).
+    // Once positions have been received, allow empty updates so that
+    // undo of the last comment correctly clears positions.
+    if (isEmpty && commentsList.value.length > 0 && !hasReceivedPositions) {
       return;
     }
+    if (!isEmpty) hasReceivedPositions = true;
     editorCommentPositions.value = allCommentPositions || {};
   };
 
@@ -864,11 +870,12 @@ export const useCommentsStore = defineStore('comments', () => {
     const comments = getGroupedComments.value?.parentComments
       .filter((c) => !c.resolvedTime)
       .filter((c) => {
-        const keys = Object.keys(editorCommentPositions.value);
-        const isPdfComment = c.selection?.source !== 'super-editor';
-        if (isPdfComment) return true;
+        // Non-editor comments (e.g. PDF) are always shown.
+        // Editor-backed comments (including tracked changes, which have no
+        // selection.source) must have a live position in the document.
+        if (!isEditorBackedComment(c)) return true;
         const commentKey = c.commentId || c.importedId;
-        return keys.includes(commentKey);
+        return Object.keys(editorCommentPositions.value).includes(commentKey);
       });
     return comments;
   });

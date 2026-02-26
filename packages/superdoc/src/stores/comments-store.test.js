@@ -707,6 +707,100 @@ describe('comments-store', () => {
     });
   });
 
+  describe('handleEditorLocationsUpdate', () => {
+    it('updates positions to empty after positions were established', () => {
+      store.commentsList = [{ commentId: 'c-1', createdTime: 1 }];
+
+      // First call with real positions — sets hasReceivedPositions
+      store.handleEditorLocationsUpdate({ 'c-1': { start: 1, end: 5 } });
+      expect(store.editorCommentPositions).toEqual({ 'c-1': { start: 1, end: 5 } });
+
+      // Second call with empty — should clear positions (undo scenario)
+      store.handleEditorLocationsUpdate({});
+      expect(store.editorCommentPositions).toEqual({});
+    });
+
+    it('guards against empty positions before any positions received', () => {
+      store.commentsList = [{ commentId: 'c-1', createdTime: 1 }];
+
+      // Call with empty before any real positions — guard should fire
+      store.handleEditorLocationsUpdate({});
+      expect(store.editorCommentPositions).toEqual({});
+
+      // Verify the guard kept the previous value (initial default is {})
+      store.editorCommentPositions = { stale: { start: 0, end: 0 } };
+      store.handleEditorLocationsUpdate({});
+      expect(store.editorCommentPositions).toEqual({ stale: { start: 0, end: 0 } });
+    });
+
+    it('redo restores comment after undo clears positions', () => {
+      store.commentsList = [{ commentId: 'c-1', createdTime: 1 }];
+
+      // Establish positions
+      store.handleEditorLocationsUpdate({ 'c-1': { start: 1, end: 5 } });
+      expect(store.editorCommentPositions).toEqual({ 'c-1': { start: 1, end: 5 } });
+
+      // Undo — clear positions
+      store.handleEditorLocationsUpdate({});
+      expect(store.editorCommentPositions).toEqual({});
+
+      // Redo — restore positions
+      store.handleEditorLocationsUpdate({ 'c-1': { start: 1, end: 5 } });
+      expect(store.editorCommentPositions).toEqual({ 'c-1': { start: 1, end: 5 } });
+    });
+
+    it('handles null input during initial load guard', () => {
+      store.commentsList = [{ commentId: 'c-1', createdTime: 1 }];
+
+      // null before any positions received — guard fires, no crash
+      expect(() => store.handleEditorLocationsUpdate(null)).not.toThrow();
+    });
+
+    it('allows empty update when commentsList is empty', () => {
+      store.commentsList = [];
+
+      // No comments in the store — guard condition is false, update proceeds
+      store.handleEditorLocationsUpdate({});
+      expect(store.editorCommentPositions).toEqual({});
+    });
+  });
+
+  describe('getFloatingComments — tracked-change undo', () => {
+    it('removes tracked-change comment from floating list when position is cleared', () => {
+      // Tracked-change comments have no selection.source
+      store.commentsList = [
+        { commentId: 'tc-1', trackedChange: true, createdTime: 1, selection: { selectionBounds: {} } },
+      ];
+
+      // Position established
+      store.handleEditorLocationsUpdate({ 'tc-1': { start: 10, end: 20 } });
+      expect(store.getFloatingComments).toHaveLength(1);
+      expect(store.getFloatingComments[0].commentId).toBe('tc-1');
+
+      // Undo removes all marks — positions cleared
+      store.handleEditorLocationsUpdate({});
+      expect(store.getFloatingComments).toHaveLength(0);
+    });
+
+    it('keeps non-editor comments visible regardless of positions', () => {
+      store.commentsList = [{ commentId: 'pdf-1', createdTime: 1, selection: { source: 'pdf', selectionBounds: {} } }];
+
+      store.editorCommentPositions = {};
+      expect(store.getFloatingComments).toHaveLength(1);
+    });
+
+    it('removes editor-backed comment without source when position is cleared', () => {
+      // Comments with no selection.source are editor-backed
+      store.commentsList = [{ commentId: 'c-1', createdTime: 1, selection: { selectionBounds: {} } }];
+
+      store.handleEditorLocationsUpdate({ 'c-1': { start: 5, end: 15 } });
+      expect(store.getFloatingComments).toHaveLength(1);
+
+      store.handleEditorLocationsUpdate({});
+      expect(store.getFloatingComments).toHaveLength(0);
+    });
+  });
+
   describe('document-driven resolution state', () => {
     it('clears resolved metadata when document anchors reappear', async () => {
       const comment = {
